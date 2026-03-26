@@ -5,6 +5,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
+const DAY_ORDER = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const DAY_ABBR = {
   MONDAY: "Mon", TUESDAY: "Tue", WEDNESDAY: "Wed", THURSDAY: "Thu",
   FRIDAY: "Fri", SATURDAY: "Sat", SUNDAY: "Sun"
@@ -76,7 +77,10 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
         {alarms.map((a, idx) => {
           const medName = medNameById.get(a.medicineId) || `Medicine #${a.medicineId ?? "?"}`;
           const dayAbbrs = a.repeatDays
-            ? [...a.repeatDays].sort().map((d) => DAY_ABBR[d] || d).join(", ")
+            ? [...a.repeatDays]
+                .sort((x, y) => DAY_ORDER.indexOf(x) - DAY_ORDER.indexOf(y))
+                .map((d) => DAY_ABBR[d] || d)
+                .join(", ")
             : "";
           return (
             <React.Fragment key={a.id}>

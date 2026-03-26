@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,9 +21,15 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expirationMs;
 
-    private Key getSigningKey() {
+    private Key signingKey;
+
+    @PostConstruct
+    public void init() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+        if (keyBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret must be at least 32 characters long");
+        }
+        signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(String username) {
@@ -32,7 +39,7 @@ public class JwtUtil {
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -55,7 +62,7 @@ public class JwtUtil {
 
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
