@@ -1,0 +1,15 @@
+# Frontend build artifacts
+frontend/node_modules/
+frontend/build/
+
+# Backend build artifacts
+backend/target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

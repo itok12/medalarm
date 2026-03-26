@@ -36,7 +36,6 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
   const [active, setActive] = useState(true);
   const [error, setError] = useState("");
 
-  // IMPORTANT: when medicines load async, set a default selection
   useEffect(() => {
     if (!medicineId && medicines.length) setMedicineId(medicines[0].id);
   }, [medicines, medicineId]);
@@ -52,7 +51,11 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
     setError("");
 
     if (!medicineId) {
-      setError("Add a medicine first.");
+      setError("Please select a medicine.");
+      return;
+    }
+    if (!alarmTime) {
+      setError("Please set an alarm time.");
       return;
     }
 

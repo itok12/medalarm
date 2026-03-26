@@ -5,6 +5,7 @@ import com.example.medapp.dto.GenerateAlarmsRequest;
 import com.example.medapp.dto.ToggleAlarmRequest;
 import com.example.medapp.entity.Alarm;
 import com.example.medapp.service.AlarmService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/alarms")
-// CORS handled in SecurityConfig
 public class AlarmController {
 
     private final AlarmService alarmService;
@@ -27,18 +27,23 @@ public class AlarmController {
     }
 
     @PostMapping
-    public ResponseEntity<Alarm> createAlarm(@RequestBody CreateAlarmRequest req) {
+    public ResponseEntity<Alarm> createAlarm(@Valid @RequestBody CreateAlarmRequest req) {
         return ResponseEntity.ok(alarmService.createAlarm(req));
     }
 
     @PostMapping("/generate")
     public ResponseEntity<List<Alarm>> generateForMedicine(@RequestBody GenerateAlarmsRequest request) {
-        // Accessing the record component
         return ResponseEntity.ok(alarmService.generateAlarmsForMedicine(request.medicineId()));
     }
 
     @PatchMapping("/{alarmId}")
     public ResponseEntity<Alarm> toggleAlarm(@PathVariable Long alarmId, @RequestBody ToggleAlarmRequest body) {
         return ResponseEntity.ok(alarmService.setAlarmActive(alarmId, body.getActive()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAlarm(@PathVariable Long id) {
+        alarmService.deleteAlarm(id);
+        return ResponseEntity.noContent().build();
     }
 }

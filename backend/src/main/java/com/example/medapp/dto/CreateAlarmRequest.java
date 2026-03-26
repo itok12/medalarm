@@ -1,9 +1,14 @@
 package com.example.medapp.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Set;
 
 public class CreateAlarmRequest {
+    @NotNull
     private Long medicineId;
+    @NotBlank
     private String alarmTime;
     private boolean active;
     private Set<String> repeatDays;

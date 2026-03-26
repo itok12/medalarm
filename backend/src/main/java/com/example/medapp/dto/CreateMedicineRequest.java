@@ -1,12 +1,19 @@
 package com.example.medapp.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class CreateMedicineRequest {
+    @NotBlank
     private String name;
+    @NotBlank
     private String dosage;
+    @NotBlank
     private String frequency;
     private String duration;
     private String instructions;
     private String imageUrl;
+    @NotNull
     private Long userId;
 
     public String getName() { return name; }

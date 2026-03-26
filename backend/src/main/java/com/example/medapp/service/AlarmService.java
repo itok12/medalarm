@@ -54,7 +54,7 @@ public class AlarmService {
             LocalTime.of(8, 0), LocalTime.of(14, 0), LocalTime.of(20, 0), LocalTime.of(23, 0)
         };
 
-        var defaultDays = EnumSet.of(DaysOfWeek.MONDAY, DaysOfWeek.TUESDAY, DaysOfWeek.WEDNESDAY, DaysOfWeek.THURSDAY, DaysOfWeek.FRIDAY);
+        var defaultDays = EnumSet.allOf(DaysOfWeek.class);
 
         for (int i = 0; i < timesPerDay; i++) {
             Alarm alarm = new Alarm();
@@ -77,6 +77,14 @@ public class AlarmService {
         return alarmRepository.save(alarm);
     }
 
+
+    @Transactional
+    public void deleteAlarm(Long alarmId) {
+        if (!alarmRepository.existsById(alarmId)) {
+            throw new IllegalArgumentException("Alarm not found: " + alarmId);
+        }
+        alarmRepository.deleteById(alarmId);
+    }
 
     @Transactional
     public Alarm createAlarm(CreateAlarmRequest req) {
