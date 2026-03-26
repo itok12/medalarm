@@ -1,0 +1,42 @@
+### Create medicine
+POST http://localhost:8080/api/medicines
+Content-Type: application/json
+
+{
+  "name": "Paracetamol",
+  "dosage": "500mg",
+  "userId": 1
+}
+
+### Get medicines for user 1
+GET http://localhost:8080/api/medicines/user/1
+
+
+
+
+
+
+
+
+
+### Create alarm
+POST http://localhost:8080/api/alarms
+Content-Type: application/json
+
+{
+  "time": "08:00",
+  "userId": 1,
+  "medicineId": 1,
+  "isActive": true
+}
+
+### Get alarms for user 1
+GET http://localhost:8080/api/alarms/user/1
+
+### Generate Alarms for Medicine 1
+POST http://localhost:8080/api/alarms/generate
+Content-Type: application/json
+
+{
+  "medicineId": 1
+}
