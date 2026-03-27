@@ -1,14 +1,28 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Grid, Alert } from "@mui/material"; 
-import Layout from "../components/Common/Layout";
-import MedicineList from "../components/Medicine/MedicineList";
-import MedicineForm from "../components/Medicine/MedicineForm";
-import AlarmList from "../components/Alarm/AlarmList";
-import CreateAlarmForm from "../components/Alarm/CreateAlarmForm";
-import { medicineAPI, alarmAPI } from "../services/api";
+import {
+  Grid, Alert, Box, Typography, Card, CardContent, CircularProgress
+} from "@mui/material";
+import Navbar from "../../components/Layout/Navbar";
+import MedicineList from "../../components/Medicine/MedicineList";
+import MedicineForm from "../../components/Medicine/MedicineForm";
+import AlarmList from "../../components/Alarm/AlarmList";
+import CreateAlarmForm from "../../components/Alarm/CreateAlarmForm";
+import AlarmNotifier from "../../components/Alarm/AlarmNotifier";
+import { medicineAPI, alarmAPI } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+
+const DAYS_OF_WEEK = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 function Dashboard() {
-  const userId = 1;
+  const { user } = useAuth();
+  const userId = user?.userId;
 
   const [medicines, setMedicines] = useState([]);
   const [alarms, setAlarms] = useState([]);
@@ -16,6 +30,7 @@ function Dashboard() {
   const [pageError, setPageError] = useState("");
 
   const refreshAll = useCallback(async () => {
+    if (!userId) return;
     setLoading(true);
     setPageError("");
     try {
@@ -27,7 +42,7 @@ function Dashboard() {
       setAlarms(alarmRes.data ?? []);
     } catch (e) {
       console.error("Dashboard refresh failed:", e);
-      setPageError("Couldn’t load data. Is the backend running on :8080?");
+      setPageError("Couldn't load data. Is the backend running on :8080?");
     } finally {
       setLoading(false);
     }
@@ -37,9 +52,49 @@ function Dashboard() {
     refreshAll();
   }, [refreshAll]);
 
+  const todayDayName = DAYS_OF_WEEK[new Date().getDay()];
+  const todaysAlarms = alarms
+    .filter((a) => a.active && a.repeatDays?.includes(todayDayName))
+    .sort((a, b) => (a.alarmTime > b.alarmTime ? 1 : -1));
+
   return (
-    <Layout>
-      <div className="dashboard-content">
+    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
+      <Navbar />
+      <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
+        <Typography variant="h5" sx={{ mb: 1, fontWeight: 700 }}>
+          {getGreeting()}, {user?.username}!
+        </Typography>
+
+        {/* Summary cards */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={6} sm={3}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" variant="body2">Medicines</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>{medicines.length}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" variant="body2">Active Alarms</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                  {alarms.filter((a) => a.active).length}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" variant="body2">Today's Alarms ({todayDayName})</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>{todaysAlarms.length}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
         {pageError && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {pageError}
@@ -47,37 +102,45 @@ function Dashboard() {
         )}
 
         {loading ? (
-          <div>Loading…</div>
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+            <CircularProgress />
+          </Box>
         ) : (
-          <Grid container spacing={3} className="dashboard-grid">
+          <Grid container spacing={3}>
             {/* Medicines Column */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <div className="dashboard-card">
-                <h2>Your Medicines</h2>
-                <MedicineForm onMedicineAdded={refreshAll} userId={userId} />
-                <MedicineList medicines={medicines} />
-              </div>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Your Medicines</Typography>
+                  <MedicineForm onMedicineAdded={refreshAll} userId={userId} />
+                  <MedicineList medicines={medicines} onChanged={refreshAll} />
+                </CardContent>
+              </Card>
             </Grid>
 
             {/* Alarms Column */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <div className="dashboard-card">
-                <h2>Your Alarms</h2>
-                <CreateAlarmForm
-                  medicines={medicines}
-                  onAlarmCreated={refreshAll}
-                />
-                <AlarmList
-                  alarms={alarms}
-                  medicines={medicines}
-                  onChanged={refreshAll}
-                />
-              </div>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Your Alarms</Typography>
+                  <CreateAlarmForm
+                    medicines={medicines}
+                    onAlarmCreated={refreshAll}
+                  />
+                  <AlarmList
+                    alarms={alarms}
+                    medicines={medicines}
+                    onChanged={refreshAll}
+                  />
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
         )}
-      </div>
-    </Layout>
+      </Box>
+
+      <AlarmNotifier alarms={alarms} medicines={medicines} />
+    </Box>
   );
 }
 

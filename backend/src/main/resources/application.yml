@@ -1,5 +1,4 @@
 spring:
-  spring:
   datasource:
     url: jdbc:h2:mem:medalarm
     driver-class-name: org.h2.Driver
@@ -28,3 +27,8 @@ server:
 app:
   ml-service:
     url: http://localhost:8000/extract-medicine-info
+
+jwt:
+  secret: medalarm-super-secret-key-change-in-production-at-least-32-chars
+  expiration: 86400000
+

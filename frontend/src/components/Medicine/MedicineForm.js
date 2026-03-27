@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import {
-  TextField,
-  Button,
-  Box,
-  MenuItem
+  TextField, Button, Box, MenuItem, Alert
 } from '@mui/material';
 import { medicineAPI, alarmAPI } from '../../services/api';
 
@@ -15,70 +12,89 @@ const MedicineForm = ({ onMedicineAdded, userId }) => {
     duration: '',
     instructions: '',
     imageUrl: '',
-    userId: userId
   });
 
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
 
   const frequencies = [
     'Once daily', 'Twice daily', 'Three times daily', 'Four times daily', 'As needed'
   ];
 
+  const validate = () => {
+    const errs = {};
+    if (!medicine.name.trim()) errs.name = 'Medicine name is required';
+    if (!medicine.dosage.trim()) errs.dosage = 'Dosage is required';
+    if (!medicine.frequency) errs.frequency = 'Frequency is required';
+    return errs;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setMedicine((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setMedicine((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setServerError('');
+
+    const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
 
     try {
       const payload = { ...medicine, userId };
-      // Removed unnecessary delete payload.user
-
       const response = await medicineAPI.create(payload);
-      await onMedicineAdded?.();
 
       try {
         await alarmAPI.generate(response.data.id);
-        await onMedicineAdded?.(); 
       } catch (genErr) {
         console.error("Alarm generation failed:", genErr);
-        setError("Medicine saved, but failed to auto-generate alarms.");
+        setServerError("Medicine saved, but failed to auto-generate alarms.");
       }
 
-      setMedicine({
-        name: "", dosage: "", frequency: "", duration: "", instructions: "", imageUrl: "", userId,
-      });
+      await onMedicineAdded?.();
 
+      setMedicine({
+        name: '', dosage: '', frequency: '', duration: '', instructions: '', imageUrl: '',
+      });
     } catch (err) {
       console.error("Medicine create failed:", err);
-      setError("Failed to add medicine");
+      setServerError("Failed to add medicine");
     }
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       <h3>Add New Medicine</h3>
-      {error && <div style={{color: 'red', marginBottom: 10}}>{error}</div>}
-      
-      <TextField label="Medicine Name" name="name" fullWidth required margin="normal" value={medicine.name} onChange={handleChange} />
-      <TextField label="Dosage" name="dosage" fullWidth margin="normal" value={medicine.dosage} onChange={handleChange} />
-      
-      <TextField select label="Frequency" name="frequency" fullWidth margin="normal" value={medicine.frequency} onChange={handleChange}>
+      {serverError && <Alert severity="error" sx={{ mb: 1 }}>{serverError}</Alert>}
+
+      <TextField
+        label="Medicine Name" name="name" fullWidth required margin="normal"
+        value={medicine.name} onChange={handleChange}
+        error={!!errors.name} helperText={errors.name}
+      />
+      <TextField
+        label="Dosage" name="dosage" fullWidth margin="normal"
+        value={medicine.dosage} onChange={handleChange}
+        error={!!errors.dosage} helperText={errors.dosage}
+      />
+      <TextField
+        select label="Frequency" name="frequency" fullWidth margin="normal"
+        value={medicine.frequency} onChange={handleChange}
+        error={!!errors.frequency} helperText={errors.frequency}
+      >
         {frequencies.map((option) => (
           <MenuItem key={option} value={option}>{option}</MenuItem>
         ))}
       </TextField>
-
       <TextField label="Duration" name="duration" fullWidth margin="normal" value={medicine.duration} onChange={handleChange} />
       <TextField label="Instructions" name="instructions" fullWidth margin="normal" multiline rows={3} value={medicine.instructions} onChange={handleChange} />
       <TextField label="Image URL" name="imageUrl" fullWidth margin="normal" value={medicine.imageUrl} onChange={handleChange} />
-      
+
       <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>Add Medicine</Button>
     </Box>
   );

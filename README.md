@@ -1,70 +1,107 @@
-# Getting Started with Create React App
+# 💊 MedAlarm
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A medicine reminder application with a Spring Boot backend and React frontend.
 
-## Available Scripts
+## Tech Stack
 
-In the project directory, you can run:
+- **Backend:** Spring Boot 3.5, Spring Security, JWT, Spring Data JPA, H2 (dev) / PostgreSQL (prod)
+- **Frontend:** React 18, Material UI (MUI), React Router, Axios
+- **Auth:** JWT-based authentication with BCrypt password hashing
+- **Docker:** Docker Compose with PostgreSQL
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Local Development (without Docker)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Backend
 
-### `npm test`
+**Prerequisites:** Java 17, Maven 3.9+
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+cd backend
+mvn spring-boot:run
+```
 
-### `npm run build`
+The backend runs on `http://localhost:8080`. H2 in-memory database is used by default.
+H2 console available at `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:medalarm`).
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+A demo user is seeded on startup:
+- **username:** `demo`
+- **password:** `demo123`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Frontend
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+**Prerequisites:** Node 18+
 
-### `npm run eject`
+```bash
+cd frontend
+npm install
+npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The frontend runs on `http://localhost:3000`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Docker (Production)
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+docker-compose up --build
+```
 
-## Learn More
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8080`
+- PostgreSQL: `localhost:5432`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Environment Variables
 
-### Code Splitting
+### Backend
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+| Variable | Description | Default |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL JDBC URL | H2 (dev) |
+| `DATABASE_USERNAME` | DB username | `sa` |
+| `DATABASE_PASSWORD` | DB password | `` |
+| `JWT_SECRET` | JWT signing secret (32+ chars) | See `application.yml` |
+| `SPRING_PROFILES_ACTIVE` | Set to `prod` for PostgreSQL | `dev` |
 
-### Analyzing the Bundle Size
+### Frontend
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+| Variable | Description | Default |
+|---|---|---|
+| `REACT_APP_API_BASE_URL` | Backend API base URL | `http://localhost:8080/api` |
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## API Endpoints
 
-### Advanced Configuration
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register a new user |
+| `POST` | `/api/auth/login` | Login and get JWT token |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Medicines
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/medicines/user/{userId}` | Get all medicines for a user |
+| `POST` | `/api/medicines` | Create a medicine |
+| `PUT` | `/api/medicines/{id}` | Update a medicine |
+| `DELETE` | `/api/medicines/{id}` | Delete a medicine |
 
-### Deployment
+### Alarms
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/alarms/user/{userId}` | Get all alarms for a user |
+| `POST` | `/api/alarms` | Create an alarm |
+| `POST` | `/api/alarms/generate` | Auto-generate alarms for a medicine |
+| `PATCH` | `/api/alarms/{id}` | Toggle alarm active/inactive |
+| `DELETE` | `/api/alarms/{id}` | Delete an alarm |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
+## Screenshots
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+> _Add screenshots here_

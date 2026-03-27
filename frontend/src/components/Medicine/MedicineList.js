@@ -1,7 +1,26 @@
-import React from "react";
-import { List, ListItem, ListItemText, Typography, Divider, Box } from "@mui/material";
+import React, { useState } from "react";
+import {
+  List, ListItem, ListItemText, Typography, Divider, Box,
+  IconButton, Avatar, Dialog, DialogTitle, DialogContent, DialogActions, Button
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import { medicineAPI } from "../../services/api";
+import EditMedicineForm from "./EditMedicineForm";
 
-function MedicineList({ medicines = [] }) {
+function MedicineList({ medicines = [], onChanged }) {
+  const [editMedicine, setEditMedicine] = useState(null);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this medicine and its alarms?")) return;
+    try {
+      await medicineAPI.delete(id);
+      await onChanged?.();
+    } catch (e) {
+      console.error("Delete failed:", e);
+    }
+  };
+
   if (!medicines.length) {
     return (
       <Typography sx={{ mt: 2 }} color="text.secondary">
@@ -19,7 +38,24 @@ function MedicineList({ medicines = [] }) {
       <List dense>
         {medicines.map((m, idx) => (
           <React.Fragment key={m.id}>
-            <ListItem>
+            <ListItem
+              secondaryAction={
+                <Box>
+                  <IconButton size="small" onClick={() => setEditMedicine(m)}>
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => handleDelete(m.id)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              }
+            >
+              <Avatar
+                src={m.imageUrl || undefined}
+                sx={{ mr: 2, bgcolor: "primary.light" }}
+              >
+                {!m.imageUrl && "💊"}
+              </Avatar>
               <ListItemText
                 primary={
                   <Typography sx={{ fontWeight: 700 }}>
@@ -36,6 +72,25 @@ function MedicineList({ medicines = [] }) {
           </React.Fragment>
         ))}
       </List>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editMedicine} onClose={() => setEditMedicine(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Medicine</DialogTitle>
+        <DialogContent>
+          {editMedicine && (
+            <EditMedicineForm
+              medicine={editMedicine}
+              onSaved={() => {
+                setEditMedicine(null);
+                onChanged?.();
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditMedicine(null)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
