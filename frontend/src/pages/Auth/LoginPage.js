@@ -6,6 +6,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { extractErrorMessage } from '../../utils/errorUtils';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ function LoginPage() {
       login(res.data.token, res.data.userId, res.data.username, res.data.refreshToken);
       navigate('/');
     } catch (err) {
-      setServerError(err.response?.data || 'Login failed. Please check your credentials.');
+      setServerError(extractErrorMessage(err, 'Login failed. Please check your credentials.'));
     } finally {
       setLoading(false);
     }

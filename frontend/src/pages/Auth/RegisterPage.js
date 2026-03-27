@@ -6,6 +6,7 @@ import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { extractErrorMessage } from '../../utils/errorUtils';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ function RegisterPage() {
       login(res.data.token, res.data.userId, res.data.username, res.data.refreshToken);
       navigate('/');
     } catch (err) {
-      setServerError(err.response?.data || 'Registration failed. Please try again.');
+      setServerError(extractErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }
