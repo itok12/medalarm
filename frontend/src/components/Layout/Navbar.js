@@ -34,6 +34,9 @@ function Navbar() {
             <Button color="inherit" size="small" onClick={() => navigate('/profile')}>
               Profile
             </Button>
+            <Button color="inherit" size="small" onClick={() => navigate('/help')}>
+              Help
+            </Button>
             <Typography variant="body2">
               Hello, <strong>{user.username}</strong>
             </Typography>

@@ -9,6 +9,8 @@ import RegisterPage from './pages/Auth/RegisterPage';
 import Dashboard from './pages/Dashboard/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import CaregiverPage from './pages/CaregiverPage';
+import HelpPage from './pages/HelpPage';
+import PwaInstallPrompt from './components/Common/PwaInstallPrompt';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -45,6 +47,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <HelpPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -60,6 +70,7 @@ function ThemedApp() {
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
+      <PwaInstallPrompt />
     </ThemeProvider>
   );
 }

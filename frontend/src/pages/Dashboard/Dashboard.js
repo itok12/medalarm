@@ -66,7 +66,7 @@ function Dashboard() {
     .sort((a, b) => (a.alarmTime > b.alarmTime ? 1 : -1));
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       <Navbar />
       <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
         <Typography variant="h5" sx={{ mb: 1, fontWeight: 700 }}>
