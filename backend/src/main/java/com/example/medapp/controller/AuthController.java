@@ -11,6 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -40,10 +44,15 @@ public class AuthController {
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
+
+        String refreshToken = UUID.randomUUID().toString();
+        user.setRefreshToken(refreshToken);
+        user.setRefreshTokenExpiry(LocalDateTime.now().plusDays(7));
+
         User saved = userRepository.save(user);
 
         String token = jwtUtil.generateToken(saved.getUsername());
-        return ResponseEntity.ok(new AuthResponse(token, saved.getId(), saved.getUsername()));
+        return ResponseEntity.ok(new AuthResponse(token, saved.getId(), saved.getUsername(), refreshToken));
     }
 
     @PostMapping("/login")
@@ -56,7 +65,29 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
 
+        String refreshToken = UUID.randomUUID().toString();
+        user.setRefreshToken(refreshToken);
+        user.setRefreshTokenExpiry(LocalDateTime.now().plusDays(7));
+        userRepository.save(user);
+
         String token = jwtUtil.generateToken(user.getUsername());
-        return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getUsername()));
+        return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getUsername(), refreshToken));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ResponseEntity.status(401).body("Missing refreshToken");
+        }
+
+        User user = userRepository.findByRefreshToken(refreshToken).orElse(null);
+        if (user == null || user.getRefreshTokenExpiry() == null
+                || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.status(401).body("Invalid or expired refresh token");
+        }
+
+        String newToken = jwtUtil.generateToken(user.getUsername());
+        return ResponseEntity.ok(Map.of("token", newToken));
     }
 }

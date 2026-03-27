@@ -2,6 +2,7 @@ package com.example.medapp.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +17,8 @@ public class User {
     private String username;
     private String email;
     private String password;
+    private String refreshToken;
+    private LocalDateTime refreshTokenExpiry;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -65,4 +68,10 @@ public class User {
     public void setMedicines(List<Medicine> medicines) {
         this.medicines = medicines;
     }
+
+    public String getRefreshToken() { return refreshToken; }
+    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
+
+    public LocalDateTime getRefreshTokenExpiry() { return refreshTokenExpiry; }
+    public void setRefreshTokenExpiry(LocalDateTime refreshTokenExpiry) { this.refreshTokenExpiry = refreshTokenExpiry; }
 }

@@ -1,107 +1,159 @@
-# 💊 MedAlarm
+# 💊 MedAlarm - Medicine Reminder App
 
-A medicine reminder application with a Spring Boot backend and React frontend.
+![CI](https://github.com/itok12/medalarm/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
-## Tech Stack
-
-- **Backend:** Spring Boot 3.5, Spring Security, JWT, Spring Data JPA, H2 (dev) / PostgreSQL (prod)
-- **Frontend:** React 18, Material UI (MUI), React Router, Axios
-- **Auth:** JWT-based authentication with BCrypt password hashing
-- **Docker:** Docker Compose with PostgreSQL
+A full-stack medicine reminder application that helps users manage their medications and never miss a dose. Built with Spring Boot and React.
 
 ---
 
-## Local Development (without Docker)
+## ✨ Features
 
-### Backend
+- 🔐 **JWT Authentication** — Secure register/login with BCrypt password hashing and refresh tokens
+- 💊 **Medicine Management** — Add, edit, and delete medicines with dosage and frequency info
+- ⏰ **Alarm Scheduling** — Auto-generate alarms based on medicine frequency, custom alarm times, repeat days
+- ✅ **Medication Logging** — Mark doses as Taken, Skipped, or Snoozed; full adherence history
+- 📊 **Adherence Chart** — 7-day bar chart of taken vs. skipped doses (powered by Recharts)
+- ⏰ **Next Alarm Card** — Shows your next upcoming alarm with live countdown
+- 🔔 **Browser Notifications** — Real-time browser push notifications when alarm time arrives
+- ⏰ **Snooze Support** — Snooze alarms for 10 minutes from the notification
+- 📧 **Email Reminders** — Optional scheduled email reminders via Spring Mail
+- 🔄 **Token Refresh** — Automatic JWT refresh on expiry; seamless session handling
+- 🛡️ **Rate Limiting** — Bucket4j-based rate limiting on auth endpoints (10 req/min per IP)
+- 📱 **PWA Support** — Installable as a Progressive Web App on mobile and desktop
+- 🐳 **Docker Support** — Full Docker Compose setup for local development
+- 🚀 **Render Deployment** — Ready-to-deploy render.yaml configuration
 
-**Prerequisites:** Java 17, Maven 3.9+
+---
 
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Spring Boot 3.5, Java 17 |
+| Auth | JWT (jjwt 0.11.5), BCrypt |
+| Database | H2 (dev), PostgreSQL (prod) |
+| ORM | Spring Data JPA / Hibernate |
+| Email | Spring Boot Mail (JavaMailSender) |
+| Rate Limiting | Bucket4j 7.6.0 |
+| Frontend | React 18, React Router 6 |
+| UI | Material UI (MUI) v5 |
+| Charts | Recharts 2.8 |
+| HTTP Client | Axios |
+| Containerization | Docker, Docker Compose |
+
+---
+
+## 📸 Screenshots
+
+> Add screenshots here
+
+---
+
+## 🚀 Local Development
+
+### Without Docker
+
+**Backend:**
 ```bash
 cd backend
-mvn spring-boot:run
+./mvnw spring-boot:run
+# API available at http://localhost:8080
 ```
 
-The backend runs on `http://localhost:8080`. H2 in-memory database is used by default.
-H2 console available at `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:medalarm`).
-
-A demo user is seeded on startup:
-- **username:** `demo`
-- **password:** `demo123`
-
-### Frontend
-
-**Prerequisites:** Node 18+
-
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm start
+# App available at http://localhost:3000
 ```
 
-The frontend runs on `http://localhost:3000`.
-
----
-
-## Docker (Production)
+### With Docker
 
 ```bash
 docker-compose up --build
+# Backend: http://localhost:8080
+# Frontend: http://localhost:3000
+# Database: PostgreSQL on port 5432
 ```
-
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8080`
-- PostgreSQL: `localhost:5432`
 
 ---
 
-## Environment Variables
-
-### Backend
+## 🔧 Environment Variables
 
 | Variable | Description | Default |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL JDBC URL | H2 (dev) |
-| `DATABASE_USERNAME` | DB username | `sa` |
-| `DATABASE_PASSWORD` | DB password | `` |
-| `JWT_SECRET` | JWT signing secret (32+ chars) | See `application.yml` |
-| `SPRING_PROFILES_ACTIVE` | Set to `prod` for PostgreSQL | `dev` |
-
-### Frontend
-
-| Variable | Description | Default |
-|---|---|---|
+|----------|-------------|---------|
+| `JWT_SECRET` | Secret key for signing JWTs | `medalarm-super-secret-key-...` |
+| `DATABASE_URL` | PostgreSQL JDBC URL (prod) | — |
+| `DATABASE_USERNAME` | Database username (prod) | — |
+| `DATABASE_PASSWORD` | Database password (prod) | — |
+| `MAIL_HOST` | SMTP host | `smtp.gmail.com` |
+| `MAIL_PORT` | SMTP port | `587` |
+| `MAIL_USERNAME` | SMTP username/email | — |
+| `MAIL_PASSWORD` | SMTP password/app password | — |
+| `MAIL_ENABLED` | Enable email reminders | `false` |
 | `REACT_APP_API_BASE_URL` | Backend API base URL | `http://localhost:8080/api` |
 
 ---
 
-## API Endpoints
+## 📡 API Endpoints
 
 ### Auth
 | Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Login and get JWT token |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login and receive JWT + refresh token |
+| POST | `/api/auth/refresh` | Refresh JWT using refresh token |
 
 ### Medicines
 | Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/medicines/user/{userId}` | Get all medicines for a user |
-| `POST` | `/api/medicines` | Create a medicine |
-| `PUT` | `/api/medicines/{id}` | Update a medicine |
-| `DELETE` | `/api/medicines/{id}` | Delete a medicine |
+|--------|----------|-------------|
+| GET | `/api/medicines/user/{userId}` | Get all medicines for a user |
+| POST | `/api/medicines` | Create a medicine |
+| PUT | `/api/medicines/{id}` | Update a medicine |
+| DELETE | `/api/medicines/{id}` | Delete a medicine |
 
 ### Alarms
 | Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/alarms/user/{userId}` | Get all alarms for a user |
-| `POST` | `/api/alarms` | Create an alarm |
-| `POST` | `/api/alarms/generate` | Auto-generate alarms for a medicine |
-| `PATCH` | `/api/alarms/{id}` | Toggle alarm active/inactive |
-| `DELETE` | `/api/alarms/{id}` | Delete an alarm |
+|--------|----------|-------------|
+| GET | `/api/alarms/user/{userId}` | Get all alarms for a user |
+| POST | `/api/alarms` | Create a custom alarm |
+| POST | `/api/alarms/generate` | Auto-generate alarms for a medicine |
+| PATCH | `/api/alarms/{alarmId}` | Toggle alarm active/inactive |
+| DELETE | `/api/alarms/{id}` | Delete an alarm |
+
+### Medication Logs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/logs` | Log a medication action (TAKEN/SKIPPED/SNOOZED) |
+| GET | `/api/logs/user/{userId}` | Get all logs for a user |
 
 ---
 
-## Screenshots
+## ☁️ Deployment on Render
 
-> _Add screenshots here_
+1. Fork or push the repository to GitHub
+2. Connect the repository to [Render](https://render.com)
+3. Render will detect `render.yaml` and create:
+   - `medalarm-backend` (Docker web service)
+   - `medalarm-frontend` (Docker web service)
+   - `medalarm-db` (PostgreSQL database, free plan)
+4. Set any required environment variables in the Render dashboard
+5. Deploy!
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'Add my feature'`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

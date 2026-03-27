@@ -13,10 +13,13 @@ export function AuthProvider({ children }) {
     return null;
   });
 
-  const login = (token, userId, username) => {
+  const login = (token, userId, username, refreshToken) => {
     localStorage.setItem('token', token);
     localStorage.setItem('userId', userId);
     localStorage.setItem('username', username);
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    }
     setUser({ token, userId: Number(userId), username });
   };
 
@@ -24,6 +27,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
+    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 

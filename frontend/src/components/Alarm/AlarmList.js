@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { alarmAPI } from "../../services/api";
+import { alarmAPI, logAPI } from "../../services/api";
 import {
-  Alert, Box, Divider, List, ListItem, ListItemText, Switch, Typography, IconButton
+  Alert, Box, Button, Divider, List, ListItem, ListItemText, Snackbar, Switch, Typography, IconButton
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -24,6 +24,7 @@ function formatTime(alarmTime) {
 
 function AlarmList({ alarms = [], medicines = [], onChanged }) {
   const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
 
   const medNameById = useMemo(() => {
     const map = new Map();
@@ -50,6 +51,17 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
     } catch (e) {
       console.error("Delete failed:", e);
       setError("Failed to delete alarm");
+    }
+  };
+
+  const handleLog = async (alarmId, status) => {
+    setError("");
+    try {
+      await logAPI.log(alarmId, status);
+      setSnackbar({ open: true, message: status === "TAKEN" ? "✅ Marked as taken!" : "⏭ Alarm skipped." });
+    } catch (e) {
+      console.error("Log failed:", e);
+      setError("Failed to log medication");
     }
   };
 
@@ -86,7 +98,25 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
             <React.Fragment key={a.id}>
               <ListItem
                 secondaryAction={
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="success"
+                      onClick={() => handleLog(a.id, "TAKEN")}
+                      sx={{ minWidth: 0, px: 1 }}
+                    >
+                      ✅
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="warning"
+                      onClick={() => handleLog(a.id, "SKIPPED")}
+                      sx={{ minWidth: 0, px: 1 }}
+                    >
+                      ⏭
+                    </Button>
                     <Switch checked={!!a.active} onChange={() => handleToggle(a)} />
                     <IconButton size="small" color="error" onClick={() => handleDelete(a.id)}>
                       <DeleteIcon fontSize="small" />
@@ -109,6 +139,17 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
           );
         })}
       </List>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
