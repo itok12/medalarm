@@ -71,6 +71,7 @@ public class MedicineService {
         if (!medicineRepository.existsById(id)) {
             throw new IllegalArgumentException("Medicine not found: " + id);
         }
+        alarmRepository.deleteByMedicineId(id);
         medicineRepository.deleteById(id);
     }
 }
