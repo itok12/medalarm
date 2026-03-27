@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Typography, CircularProgress, Button, Box } from "@mui/material";
+import { Card, CardContent, Typography, CircularProgress, Button, Box, Tooltip as MuiTooltip } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import BarChartIcon from "@mui/icons-material/BarChart";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 import { logAPI } from "../../services/api";
 
@@ -61,6 +62,8 @@ function AdherenceChart({ userId }) {
     }
   };
 
+  const hasData = chartData.some((d) => d.TAKEN > 0 || d.SKIPPED > 0);
+
   return (
     <Card sx={{ mt: 2 }}>
       <CardContent>
@@ -68,26 +71,36 @@ function AdherenceChart({ userId }) {
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             📊 Adherence (Last 7 Days)
           </Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={handleExportCSV}
-          >
-            Export CSV
-          </Button>
+          <MuiTooltip title="Download adherence log as CSV">
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportCSV}
+            >
+              Export CSV
+            </Button>
+          </MuiTooltip>
         </Box>
         {loading ? (
-          <CircularProgress size={24} />
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : !hasData ? (
+          <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
+            <BarChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+            <Typography variant="body2">No adherence data yet.</Typography>
+            <Typography variant="caption">Start marking doses as Taken or Skipped to see your chart.</Typography>
+          </Box>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData}>
-              <XAxis dataKey="label" />
-              <YAxis allowDecimals={false} />
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={chartData} barSize={20}>
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} width={28} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="TAKEN" fill="#4caf50" name="Taken" />
-              <Bar dataKey="SKIPPED" fill="#f44336" name="Skipped" />
+              <Bar dataKey="TAKEN" fill="#2e7d32" name="Taken" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="SKIPPED" fill="#c62828" name="Skipped" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

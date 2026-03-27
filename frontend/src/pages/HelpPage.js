@@ -1,9 +1,13 @@
 import React from 'react';
 import {
   Box, Card, CardContent, Typography, Accordion, AccordionSummary,
-  AccordionDetails, Divider, Link
+  AccordionDetails, Divider, Link, Button, Fade,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
+import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Layout/Navbar';
 
 const FAQ = [
@@ -29,7 +33,7 @@ const FAQ = [
   },
   {
     q: 'How do I change my password or email?',
-    a: 'Go to the Profile page (top-right navigation). You can update your password or email after confirming your current password.',
+    a: 'Go to the Profile page (accessible via the top navigation). You can update your password or email after confirming your current password.',
   },
   {
     q: 'Can I use this on my phone?',
@@ -39,80 +43,126 @@ const FAQ = [
     q: 'Are my alarms active when the browser is closed?',
     a: 'Browser notifications only work while the page is open. For always-on reminders, consider adding the app to your home screen as a PWA, or enable email reminders (if configured by your admin).',
   },
+  {
+    q: 'How do I change notification settings?',
+    a: 'Go to the Settings page from the navigation menu. You can adjust snooze duration, alarm tones, notification sounds, and other preferences.',
+  },
+];
+
+const TIPS = [
+  'Allow browser notifications when prompted so alarms fire correctly.',
+  'Set a start date and duration on medicines so the app can track course end-dates.',
+  'Use repeat days on alarms to schedule doses on specific days of the week.',
+  'Export your CSV log before doctor appointments to share your adherence history.',
+  'Toggle alarms off instead of deleting them — you can easily re-enable them later.',
+  'Use the Settings page to customize your snooze duration and alarm tone.',
 ];
 
 function HelpPage() {
+  const navigate = useNavigate();
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Navbar />
-      <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
-        <Typography variant="h5" sx={{ mb: 1, fontWeight: 700 }}>
-          Help &amp; About
-        </Typography>
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          Everything you need to know about MedAlarm.
-        </Typography>
+      <Fade in timeout={400}>
+        <Box sx={{ maxWidth: 800, mx: 'auto', p: { xs: 2, sm: 3 } }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
+              ❓ Help &amp; FAQ
+            </Typography>
+            <Typography color="text.secondary" variant="body2">
+              Find answers to common questions and useful tips for using MedAlarm.
+            </Typography>
+          </Box>
 
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              💊 About MedAlarm
+          {/* Quick links */}
+          <Card sx={{ mb: 3, bgcolor: 'primary.main', color: '#fff' }}>
+            <CardContent sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ flex: 1, minWidth: 200 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Need more info?
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Learn about the app or send us your feedback.
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate('/about')}
+                  sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}
+                  startIcon={<InfoOutlinedIcon fontSize="small" />}
+                >
+                  About
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate('/contact')}
+                  sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}
+                  startIcon={<ContactSupportOutlinedIcon fontSize="small" />}
+                >
+                  Contact
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* FAQ */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <ContactSupportOutlinedIcon color="primary" />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Frequently Asked Questions
             </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              MedAlarm is a free, open-source medicine reminder application that helps you and your
-              caregivers manage medications and never miss a dose.
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Built with Spring Boot (backend) and React + Material UI (frontend).{' '}
+          </Box>
+
+          {FAQ.map((item, idx) => (
+            <Accordion key={idx} disableGutters sx={{ mb: 0.5 }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography sx={{ fontWeight: 600 }}>{item.q}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography variant="body2" color="text.secondary">
+                  {item.a}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+
+          {/* Tips */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <TipsAndUpdatesOutlinedIcon color="warning" />
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Quick Tips
+                </Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+              <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                {TIPS.map((tip, i) => (
+                  <li key={i}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                      {tip}
+                    </Typography>
+                  </li>
+                ))}
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Open source */}
+          <Box sx={{ mt: 3, textAlign: 'center', color: 'text.secondary' }}>
+            <Typography variant="body2">
+              MedAlarm is open source —{' '}
               <Link href="https://github.com/itok12/medalarm" target="_blank" rel="noopener noreferrer">
-                View on GitHub
+                view on GitHub
               </Link>
             </Typography>
-          </CardContent>
-        </Card>
-
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          Frequently Asked Questions
-        </Typography>
-
-        {FAQ.map((item, idx) => (
-          <Accordion key={idx} disableGutters>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography sx={{ fontWeight: 600 }}>{item.q}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                {item.a}
-              </Typography>
-            </AccordionDetails>
-          </Accordion>
-        ))}
-
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              Quick Tips
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              {[
-                'Allow browser notifications when prompted so alarms fire correctly.',
-                'Set a start date and duration on medicines so the app can track course end-dates.',
-                'Use repeat days on alarms to schedule doses on specific days of the week.',
-                'Export your CSV log before doctor appointments to share your adherence history.',
-                'Toggle alarms off instead of deleting them — you can easily re-enable them later.',
-              ].map((tip, i) => (
-                <li key={i}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    {tip}
-                  </Typography>
-                </li>
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
+          </Box>
+        </Box>
+      </Fade>
     </Box>
   );
 }
