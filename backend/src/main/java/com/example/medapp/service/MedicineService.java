@@ -47,6 +47,7 @@ public class MedicineService {
         medicine.setInstructions(req.getInstructions());
         medicine.setImageUrl(req.getImageUrl());
         medicine.setUser(user);
+        medicine.setStartDate(java.time.LocalDate.now());
 
         return medicineRepository.save(medicine);
     }

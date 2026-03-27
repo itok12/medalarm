@@ -3,6 +3,7 @@ package com.example.medapp.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "medicine")
@@ -18,6 +19,7 @@ public class Medicine {
     private String duration;
     private String instructions;
     private String imageUrl;
+    private LocalDate startDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -85,6 +87,14 @@ public class Medicine {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
     }
 
     public User getUser() { return user; }
