@@ -24,10 +24,15 @@ A full-stack medicine reminder application that helps users manage their medicat
 - 🐳 **Docker Support** — Full Docker Compose setup for local development
 - 🚀 **Render Deployment** — Ready-to-deploy render.yaml configuration
 - 👤 **Profile Page** — Change password and email from a dedicated profile page
+- ⚙️ **Settings Page** — Customize notification sound, snooze duration, alarm tone, default alarm time, date format, and compact view preference (persisted to localStorage)
+- ℹ️ **About Page** — Learn about MedAlarm's mission, feature highlights, and tech stack
+- 📬 **Contact & Feedback Page** — Submit bug reports, feature requests, and general feedback; includes GitHub links
+- ❓ **Help & FAQ Page** — Answers to common questions and usage tips; links to About and Contact
 - ⏳ **Medicine Expiry Tracking** — Track start/end dates; auto-deactivate alarms after duration expires; Expired/Expiring Soon chips in the UI
 - 🌙 **Dark Mode** — Toggle between light and dark themes; preference persisted to localStorage
 - 📥 **CSV Export** — Export full adherence log as CSV from the dashboard
 - 👨‍👩‍👧 **Caregiver Mode** — Add patients by username; view their adherence logs with caregiver authorization
+- 📲 **Responsive Navigation** — Hamburger menu on mobile with full drawer navigation and active link highlighting
 
 ---
 
@@ -52,6 +57,22 @@ A full-stack medicine reminder application that helps users manage their medicat
 ## 📸 Screenshots
 
 > Add screenshots here
+
+---
+
+## 🗺️ Application Pages
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/login` | Sign In | Login with username and password |
+| `/register` | Register | Create a new account |
+| `/` | Dashboard | Overview of medicines, alarms, adherence chart, and next alarm |
+| `/profile` | Profile | Change password and email |
+| `/settings` | Settings | Customize notification sound, snooze duration, alarm tone, default alarm time, date format, and compact view |
+| `/caregiver` | Caregiver | Add patients and view their medication adherence logs |
+| `/help` | Help & FAQ | Frequently asked questions and quick tips |
+| `/about` | About | App mission, feature highlights, and tech stack |
+| `/contact` | Contact & Feedback | Submit bug reports, feature requests, or general feedback |
 
 ---
 
