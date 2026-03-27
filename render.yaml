@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: medalarm-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        fromDatabase:
+          name: medalarm-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MAIL_ENABLED
+        value: false
+
+  - type: web
+    name: medalarm-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    envVars:
+      - key: REACT_APP_API_BASE_URL
+        value: https://medalarm-backend.onrender.com/api
+
+databases:
+  - name: medalarm-db
+    databaseName: medalarm
+    plan: free

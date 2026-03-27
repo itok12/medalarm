@@ -42,7 +42,7 @@ function RegisterPage() {
     setLoading(true);
     try {
       const res = await authAPI.register(form);
-      login(res.data.token, res.data.userId, res.data.username);
+      login(res.data.token, res.data.userId, res.data.username, res.data.refreshToken);
       navigate('/');
     } catch (err) {
       setServerError(err.response?.data || 'Registration failed. Please try again.');

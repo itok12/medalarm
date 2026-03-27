@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Snackbar, Alert } from "@mui/material";
+import { Button, Snackbar, Alert } from "@mui/material";
+import { logAPI } from "../../services/api";
 
 function AlarmNotifier({ alarms = [], medicines = [] }) {
-  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", alarmId: null });
   const notifiedRef = useRef(new Set());
+  const [snoozed, setSnoozed] = useState(new Map());
 
   const medNameById = useMemo(() => {
     const map = new Map();
@@ -25,6 +27,10 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
       alarms.forEach((alarm) => {
         if (!alarm.active) return;
 
+        // Skip snoozed alarms
+        const snoozeUntil = snoozed.get(alarm.id);
+        if (snoozeUntil && snoozeUntil > Date.now()) return;
+
         // alarmTime may be "HH:mm:ss" or "HH:mm"
         const alarmHHMM = alarm.alarmTime?.slice(0, 5);
         if (alarmHHMM !== currentTime) return;
@@ -40,23 +46,55 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
           new Notification("💊 MedAlarm", { body: message });
         }
 
-        setSnackbar({ open: true, message });
+        setSnackbar({ open: true, message, alarmId: alarm.id });
       });
     };
 
     check();
     const interval = setInterval(check, 60000);
     return () => clearInterval(interval);
-  }, [alarms, medNameById]);
+  }, [alarms, medNameById, snoozed]);
+
+  const handleTaken = async () => {
+    if (snackbar.alarmId) {
+      try {
+        await logAPI.log(snackbar.alarmId, "TAKEN");
+      } catch (e) {
+        console.error("Failed to log TAKEN:", e);
+      }
+    }
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleSnooze = async () => {
+    if (snackbar.alarmId) {
+      setSnoozed((prev) => new Map(prev).set(snackbar.alarmId, Date.now() + 600000));
+      try {
+        await logAPI.log(snackbar.alarmId, "SNOOZED");
+      } catch (e) {
+        console.error("Failed to log SNOOZED:", e);
+      }
+    }
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   return (
     <Snackbar
       open={snackbar.open}
-      autoHideDuration={10000}
+      autoHideDuration={null}
       onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       anchorOrigin={{ vertical: "top", horizontal: "center" }}
     >
-      <Alert severity="info" onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+      <Alert
+        severity="info"
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        action={
+          <>
+            <Button color="inherit" size="small" onClick={handleTaken}>✅ Taken</Button>
+            <Button color="inherit" size="small" onClick={handleSnooze}>⏰ Snooze 10 min</Button>
+          </>
+        }
+      >
         💊 {snackbar.message}
       </Alert>
     </Snackbar>

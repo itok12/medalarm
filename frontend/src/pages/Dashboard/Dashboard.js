@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Grid, Alert, Box, Typography, Card, CardContent, CircularProgress
 } from "@mui/material";
@@ -8,6 +8,8 @@ import MedicineForm from "../../components/Medicine/MedicineForm";
 import AlarmList from "../../components/Alarm/AlarmList";
 import CreateAlarmForm from "../../components/Alarm/CreateAlarmForm";
 import AlarmNotifier from "../../components/Alarm/AlarmNotifier";
+import AdherenceChart from "../../components/Dashboard/AdherenceChart";
+import NextAlarmCard from "../../components/Dashboard/NextAlarmCard";
 import { medicineAPI, alarmAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
@@ -28,6 +30,12 @@ function Dashboard() {
   const [alarms, setAlarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
+
+  const medNameById = useMemo(() => {
+    const map = new Map();
+    medicines.forEach((m) => map.set(m.id, m.name));
+    return map;
+  }, [medicines]);
 
   const refreshAll = useCallback(async () => {
     if (!userId) return;
@@ -116,6 +124,7 @@ function Dashboard() {
                   <MedicineList medicines={medicines} onChanged={refreshAll} />
                 </CardContent>
               </Card>
+              <AdherenceChart userId={userId} />
             </Grid>
 
             {/* Alarms Column */}
@@ -134,6 +143,7 @@ function Dashboard() {
                   />
                 </CardContent>
               </Card>
+              <NextAlarmCard alarms={alarms} medNameById={medNameById} />
             </Grid>
           </Grid>
         )}

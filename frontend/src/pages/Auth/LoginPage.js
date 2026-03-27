@@ -39,7 +39,7 @@ function LoginPage() {
     setLoading(true);
     try {
       const res = await authAPI.login(form);
-      login(res.data.token, res.data.userId, res.data.username);
+      login(res.data.token, res.data.userId, res.data.username, res.data.refreshToken);
       navigate('/');
     } catch (err) {
       setServerError(err.response?.data || 'Login failed. Please try again.');
