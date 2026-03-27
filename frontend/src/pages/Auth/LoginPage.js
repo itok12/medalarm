@@ -49,7 +49,7 @@ function LoginPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
       <Paper sx={{ p: 4, width: '100%', maxWidth: 400 }} elevation={3}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 700, textAlign: 'center' }}>
           💊 MedAlarm — Sign In

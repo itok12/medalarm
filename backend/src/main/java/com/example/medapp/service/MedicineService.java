@@ -63,6 +63,7 @@ public class MedicineService {
         if (req.getDuration() != null) medicine.setDuration(req.getDuration());
         if (req.getInstructions() != null) medicine.setInstructions(req.getInstructions());
         if (req.getImageUrl() != null) medicine.setImageUrl(req.getImageUrl());
+        if (req.getStartDate() != null) medicine.setStartDate(req.getStartDate());
 
         return medicineRepository.save(medicine);
     }

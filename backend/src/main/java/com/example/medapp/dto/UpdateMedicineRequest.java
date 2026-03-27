@@ -1,6 +1,7 @@
 package com.example.medapp.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
 
 public class UpdateMedicineRequest {
     @NotBlank
@@ -12,6 +13,7 @@ public class UpdateMedicineRequest {
     private String duration;
     private String instructions;
     private String imageUrl;
+    private LocalDate startDate;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -30,4 +32,7 @@ public class UpdateMedicineRequest {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 }

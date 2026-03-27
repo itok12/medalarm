@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  TextField, Button, Box, MenuItem, Alert
+  TextField, Button, Box, MenuItem, Alert, Typography
 } from '@mui/material';
 import { medicineAPI, alarmAPI } from '../../services/api';
 
@@ -68,22 +68,24 @@ const MedicineForm = ({ onMedicineAdded, userId }) => {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-      <h3>Add New Medicine</h3>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Add New Medicine
+      </Typography>
       {serverError && <Alert severity="error" sx={{ mb: 1 }}>{serverError}</Alert>}
 
       <TextField
-        label="Medicine Name" name="name" fullWidth required margin="normal"
+        label="Medicine Name" name="name" fullWidth required margin="dense"
         value={medicine.name} onChange={handleChange}
         error={!!errors.name} helperText={errors.name}
       />
       <TextField
-        label="Dosage" name="dosage" fullWidth margin="normal"
+        label="Dosage (e.g. 500mg)" name="dosage" fullWidth margin="dense"
         value={medicine.dosage} onChange={handleChange}
         error={!!errors.dosage} helperText={errors.dosage}
       />
       <TextField
-        select label="Frequency" name="frequency" fullWidth margin="normal"
+        select label="Frequency" name="frequency" fullWidth margin="dense"
         value={medicine.frequency} onChange={handleChange}
         error={!!errors.frequency} helperText={errors.frequency}
       >
@@ -91,11 +93,17 @@ const MedicineForm = ({ onMedicineAdded, userId }) => {
           <MenuItem key={option} value={option}>{option}</MenuItem>
         ))}
       </TextField>
-      <TextField label="Duration" name="duration" fullWidth margin="normal" value={medicine.duration} onChange={handleChange} />
-      <TextField label="Instructions" name="instructions" fullWidth margin="normal" multiline rows={3} value={medicine.instructions} onChange={handleChange} />
-      <TextField label="Image URL" name="imageUrl" fullWidth margin="normal" value={medicine.imageUrl} onChange={handleChange} />
+      <TextField
+        label="Duration (e.g. 7 days, 2 weeks)" name="duration" fullWidth margin="dense"
+        value={medicine.duration} onChange={handleChange}
+        helperText="Optional: used to auto-deactivate alarms when course ends"
+      />
+      <TextField
+        label="Instructions" name="instructions" fullWidth margin="dense" multiline rows={2}
+        value={medicine.instructions} onChange={handleChange}
+      />
 
-      <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>Add Medicine</Button>
+      <Button type="submit" variant="contained" fullWidth sx={{ mt: 1.5 }}>Add Medicine</Button>
     </Box>
   );
 };
