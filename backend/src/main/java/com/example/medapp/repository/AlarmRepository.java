@@ -2,6 +2,7 @@
 package com.example.medapp.repository;
 
 import com.example.medapp.entity.Alarm;
+import com.example.medapp.entity.Medicine;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +20,6 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
             where m.user.id = :userId
             """)
     List<Alarm> findForUser(@Param("userId") Long userId);
+
+    List<Alarm> findByMedicine(Medicine medicine);
 }

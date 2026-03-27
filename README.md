@@ -23,6 +23,11 @@ A full-stack medicine reminder application that helps users manage their medicat
 - 📱 **PWA Support** — Installable as a Progressive Web App on mobile and desktop
 - 🐳 **Docker Support** — Full Docker Compose setup for local development
 - 🚀 **Render Deployment** — Ready-to-deploy render.yaml configuration
+- 👤 **Profile Page** — Change password and email from a dedicated profile page
+- ⏳ **Medicine Expiry Tracking** — Track start/end dates; auto-deactivate alarms after duration expires; Expired/Expiring Soon chips in the UI
+- 🌙 **Dark Mode** — Toggle between light and dark themes; preference persisted to localStorage
+- 📥 **CSV Export** — Export full adherence log as CSV from the dashboard
+- 👨‍👩‍👧 **Caregiver Mode** — Add patients by username; view their adherence logs with caregiver authorization
 
 ---
 
@@ -128,6 +133,29 @@ docker-compose up --build
 |--------|----------|-------------|
 | POST | `/api/logs` | Log a medication action (TAKEN/SKIPPED/SNOOZED) |
 | GET | `/api/logs/user/{userId}` | Get all logs for a user |
+| GET | `/api/logs/user/{userId}/export` | Export adherence log as CSV |
+| GET | `/api/logs/patient/{patientId}?caregiverId={id}` | Get patient logs (caregiver only) |
+
+### Users
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users/{id}` | Get user by ID |
+| PUT | `/api/users/{id}/profile` | Update password or email |
+
+### Caregivers
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/caregivers` | Add a patient by username |
+| GET | `/api/caregivers/{caregiverId}/patients` | List all patients for a caregiver |
+
+---
+
+## 🧪 Integration Tests
+
+The backend includes integration tests using `@SpringBootTest` with an in-memory H2 database:
+
+- **`AuthControllerTest`** — register, duplicate username, login, wrong password
+- **`MedicineControllerTest`** — create with JWT, create without JWT (401), get medicines list
 
 ---
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Typography, CircularProgress } from "@mui/material";
+import { Card, CardContent, Typography, CircularProgress, Button, Box } from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
@@ -44,12 +45,38 @@ function AdherenceChart({ userId }) {
       .finally(() => setLoading(false));
   }, [userId]);
 
+  const handleExportCSV = async () => {
+    try {
+      const response = await logAPI.exportCSV(userId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "adherence-log.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed:", e);
+    }
+  };
+
   return (
     <Card sx={{ mt: 2 }}>
       <CardContent>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          📊 Adherence (Last 7 Days)
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            📊 Adherence (Last 7 Days)
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleExportCSV}
+          >
+            Export CSV
+          </Button>
+        </Box>
         {loading ? (
           <CircularProgress size={24} />
         ) : (

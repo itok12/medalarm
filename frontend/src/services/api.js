@@ -118,6 +118,22 @@ export const alarmAPI = {
 export const logAPI = {
   log: (alarmId, status) => api.post('/logs', { alarmId, status }),
   getForUser: (userId) => api.get(`/logs/user/${userId}`),
+  exportCSV: (userId) => api.get(`/logs/user/${userId}/export`, { responseType: 'blob' }),
+};
+
+// User profile API
+export const userAPI = {
+  getUser: (id) => api.get(`/users/${id}`),
+  updateProfile: (id, data) => api.put(`/users/${id}/profile`, data),
+};
+
+// Caregiver API
+export const caregiverAPI = {
+  addPatient: (caregiverId, patientUsername) =>
+    api.post('/caregivers', { caregiverId, patientUsername }),
+  getPatients: (caregiverId) => api.get(`/caregivers/${caregiverId}/patients`),
+  getPatientLogs: (patientId, caregiverId) =>
+    api.get(`/logs/patient/${patientId}`, { params: { caregiverId } }),
 };
 
 export default api;
