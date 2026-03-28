@@ -1,17 +1,19 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:medalarm
+    url: jdbc:h2:mem:medalarm;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
     password:
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     open-in-view: false
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    enabled: true
   h2:
     console:
       enabled: true
@@ -53,6 +55,7 @@ app:
 jwt:
   secret: medalarm-super-secret-key-change-in-production-at-least-32-chars
   expiration: 86400000
+  refresh-token-days: 7
 
 medalarm:
   email:

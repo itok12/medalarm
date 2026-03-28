@@ -1,78 +1,81 @@
 package com.example.medapp.service;
 
+import com.example.medapp.dto.CreateMedicineRequest;
 import com.example.medapp.dto.UpdateMedicineRequest;
 import com.example.medapp.entity.Medicine;
-import com.example.medapp.dto.CreateMedicineRequest;
 import com.example.medapp.entity.User;
-import com.example.medapp.repository.AlarmRepository;
 import com.example.medapp.repository.MedicineRepository;
-import com.example.medapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class MedicineService {
 
     private final MedicineRepository medicineRepository;
-    private final UserRepository userRepository;
-    private final AlarmRepository alarmRepository;
+    private final CurrentUserService currentUserService;
 
-    public MedicineService(MedicineRepository medicineRepository,
-                           UserRepository userRepository,
-                           AlarmRepository alarmRepository) {
+    public MedicineService(MedicineRepository medicineRepository, CurrentUserService currentUserService) {
         this.medicineRepository = medicineRepository;
-        this.userRepository = userRepository;
-        this.alarmRepository = alarmRepository;
+        this.currentUserService = currentUserService;
     }
 
-    public List<Medicine> getMedicinesForUser(Long userId) {
-        return medicineRepository.findForUser(userId);
+    @Transactional(readOnly = true)
+    public List<Medicine> getMedicinesForCurrentUser() {
+        return medicineRepository.findForUser(currentUserService.getCurrentUserId());
     }
 
+    @Transactional
     public Medicine createMedicine(CreateMedicineRequest req) {
-        if (req.getUserId() == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-
-        User user = userRepository.findById(req.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + req.getUserId()));
+        User user = currentUserService.getCurrentUser();
+        validateDateRange(req.getStartDate(), req.getEndDate());
 
         Medicine medicine = new Medicine();
         medicine.setName(req.getName());
         medicine.setDosage(req.getDosage());
         medicine.setFrequency(req.getFrequency());
-        medicine.setDuration(req.getDuration());
         medicine.setInstructions(req.getInstructions());
         medicine.setImageUrl(req.getImageUrl());
         medicine.setUser(user);
-        medicine.setStartDate(java.time.LocalDate.now());
+        medicine.setStartDate(req.getStartDate());
+        medicine.setEndDate(req.getEndDate());
 
         return medicineRepository.save(medicine);
     }
 
     @Transactional
     public Medicine updateMedicine(Long id, UpdateMedicineRequest req) {
-        Medicine medicine = medicineRepository.findById(id)
+        Medicine medicine = medicineRepository.findForUserById(id, currentUserService.getCurrentUserId())
                 .orElseThrow(() -> new IllegalArgumentException("Medicine not found: " + id));
 
-        if (req.getName() != null) medicine.setName(req.getName());
-        if (req.getDosage() != null) medicine.setDosage(req.getDosage());
-        if (req.getFrequency() != null) medicine.setFrequency(req.getFrequency());
-        if (req.getDuration() != null) medicine.setDuration(req.getDuration());
-        if (req.getInstructions() != null) medicine.setInstructions(req.getInstructions());
-        if (req.getImageUrl() != null) medicine.setImageUrl(req.getImageUrl());
-        if (req.getStartDate() != null) medicine.setStartDate(req.getStartDate());
+        validateDateRange(req.getStartDate(), req.getEndDate());
+
+        medicine.setName(req.getName());
+        medicine.setDosage(req.getDosage());
+        medicine.setFrequency(req.getFrequency());
+        medicine.setInstructions(req.getInstructions());
+        medicine.setImageUrl(req.getImageUrl());
+        medicine.setStartDate(req.getStartDate());
+        medicine.setEndDate(req.getEndDate());
 
         return medicineRepository.save(medicine);
     }
 
     @Transactional
     public void deleteMedicine(Long id) {
-        if (!medicineRepository.existsById(id)) {
-            throw new IllegalArgumentException("Medicine not found: " + id);
+        Medicine medicine = medicineRepository.findForUserById(id, currentUserService.getCurrentUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Medicine not found: " + id));
+        medicineRepository.delete(medicine);
+    }
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("startDate is required");
         }
-        medicineRepository.deleteById(id);
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("endDate must be on or after startDate");
+        }
     }
 }

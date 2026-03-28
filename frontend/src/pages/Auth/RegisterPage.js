@@ -43,8 +43,11 @@ function RegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await authAPI.register(form);
-      login(res.data.token, res.data.userId, res.data.username, res.data.refreshToken);
+      const res = await authAPI.register({
+        ...form,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      login(res.data);
       navigate('/');
     } catch (err) {
       setServerError(extractErrorMessage(err, 'Registration failed. Please try again.'));

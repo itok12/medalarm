@@ -17,6 +17,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../services/api';
 import { useThemeMode } from '../../context/ThemeContext';
 
 const NAV_ITEMS = [
@@ -38,7 +39,12 @@ function Navbar() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    }
     logout();
     navigate('/login');
     setDrawerOpen(false);
@@ -61,7 +67,7 @@ function Navbar() {
             sx={{ fontWeight: 800, cursor: 'pointer', letterSpacing: '-0.3px', mr: 1 }}
             onClick={() => navigate('/')}
           >
-            💊 MedAlarm
+            MedAlarm
           </Typography>
 
           {user && !isMobile && (
@@ -123,7 +129,6 @@ function Navbar() {
         </Toolbar>
       </AppBar>
 
-      {/* Mobile Drawer */}
       <Drawer
         anchor="right"
         open={drawerOpen}
@@ -132,7 +137,7 @@ function Navbar() {
       >
         <Box sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 800 }}>
-            💊 MedAlarm
+            MedAlarm
           </Typography>
           {user && (
             <Typography variant="body2" color="text.secondary">

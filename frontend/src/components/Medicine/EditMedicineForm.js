@@ -1,52 +1,66 @@
-import React, { useState } from "react";
-import { Box, TextField, Button, MenuItem, Alert } from "@mui/material";
-import { medicineAPI } from "../../services/api";
+import React, { useState } from 'react';
+import { Box, TextField, Button, MenuItem, Alert } from '@mui/material';
+import { medicineAPI } from '../../services/api';
 
-const frequencies = [
-  "Once daily", "Twice daily", "Three times daily", "Four times daily", "As needed"
+const FREQUENCIES = [
+  'Once daily', 'Twice daily', 'Three times daily', 'Four times daily', 'As needed',
 ];
+
+function normalizeDate(value) {
+  return value ? String(value).slice(0, 10) : '';
+}
 
 function EditMedicineForm({ medicine, onSaved }) {
   const [form, setForm] = useState({
-    name: medicine.name || "",
-    dosage: medicine.dosage || "",
-    frequency: medicine.frequency || "",
-    duration: medicine.duration || "",
-    instructions: medicine.instructions || "",
-    imageUrl: medicine.imageUrl || "",
+    name: medicine.name || '',
+    dosage: medicine.dosage || '',
+    frequency: medicine.frequency || '',
+    instructions: medicine.instructions || '',
+    imageUrl: medicine.imageUrl || '',
+    startDate: normalizeDate(medicine.startDate),
+    endDate: normalizeDate(medicine.endDate),
   });
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
-    const errs = {};
-    if (!form.name.trim()) errs.name = "Medicine name is required";
-    if (!form.dosage.trim()) errs.dosage = "Dosage is required";
-    if (!form.frequency) errs.frequency = "Frequency is required";
-    return errs;
+    const nextErrors = {};
+    if (!form.name.trim()) nextErrors.name = 'Medicine name is required';
+    if (!form.dosage.trim()) nextErrors.dosage = 'Dosage is required';
+    if (!form.frequency) nextErrors.frequency = 'Frequency is required';
+    if (!form.startDate) nextErrors.startDate = 'Start date is required';
+    if (form.endDate && form.endDate < form.startDate) {
+      nextErrors.endDate = 'End date must be on or after the start date';
+    }
+    return nextErrors;
   };
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError("");
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setServerError('');
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
       return;
     }
+
     setLoading(true);
     try {
-      await medicineAPI.update(medicine.id, form);
+      await medicineAPI.update(medicine.id, {
+        ...form,
+        endDate: form.endDate || null,
+      });
       onSaved?.();
-    } catch (err) {
-      console.error("Update failed:", err);
-      setServerError("Failed to update medicine");
+    } catch (error) {
+      console.error('Update failed:', error);
+      setServerError(error.response?.data?.error || 'Failed to update medicine');
     } finally {
       setLoading(false);
     }
@@ -57,30 +71,85 @@ function EditMedicineForm({ medicine, onSaved }) {
       {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
 
       <TextField
-        fullWidth label="Medicine Name" name="name" margin="normal"
-        value={form.name} onChange={handleChange}
-        error={!!errors.name} helperText={errors.name}
+        fullWidth
+        label="Medicine Name"
+        name="name"
+        margin="normal"
+        value={form.name}
+        onChange={handleChange}
+        error={!!errors.name}
+        helperText={errors.name}
       />
       <TextField
-        fullWidth label="Dosage" name="dosage" margin="normal"
-        value={form.dosage} onChange={handleChange}
-        error={!!errors.dosage} helperText={errors.dosage}
+        fullWidth
+        label="Dosage"
+        name="dosage"
+        margin="normal"
+        value={form.dosage}
+        onChange={handleChange}
+        error={!!errors.dosage}
+        helperText={errors.dosage}
       />
       <TextField
-        select fullWidth label="Frequency" name="frequency" margin="normal"
-        value={form.frequency} onChange={handleChange}
-        error={!!errors.frequency} helperText={errors.frequency}
+        select
+        fullWidth
+        label="Frequency"
+        name="frequency"
+        margin="normal"
+        value={form.frequency}
+        onChange={handleChange}
+        error={!!errors.frequency}
+        helperText={errors.frequency}
       >
-        {frequencies.map((f) => (
-          <MenuItem key={f} value={f}>{f}</MenuItem>
+        {FREQUENCIES.map((frequency) => (
+          <MenuItem key={frequency} value={frequency}>{frequency}</MenuItem>
         ))}
       </TextField>
-      <TextField fullWidth label="Duration" name="duration" margin="normal" value={form.duration} onChange={handleChange} />
-      <TextField fullWidth label="Instructions" name="instructions" margin="normal" multiline rows={2} value={form.instructions} onChange={handleChange} />
-      <TextField fullWidth label="Image URL" name="imageUrl" margin="normal" value={form.imageUrl} onChange={handleChange} />
+      <TextField
+        fullWidth
+        label="Start Date"
+        name="startDate"
+        type="date"
+        margin="normal"
+        value={form.startDate}
+        onChange={handleChange}
+        InputLabelProps={{ shrink: true }}
+        error={!!errors.startDate}
+        helperText={errors.startDate}
+      />
+      <TextField
+        fullWidth
+        label="End Date"
+        name="endDate"
+        type="date"
+        margin="normal"
+        value={form.endDate}
+        onChange={handleChange}
+        InputLabelProps={{ shrink: true }}
+        error={!!errors.endDate}
+        helperText={errors.endDate}
+      />
+      <TextField
+        fullWidth
+        label="Instructions"
+        name="instructions"
+        margin="normal"
+        multiline
+        rows={2}
+        value={form.instructions}
+        onChange={handleChange}
+      />
+      <TextField
+        fullWidth
+        label="Image URL"
+        name="imageUrl"
+        margin="normal"
+        value={form.imageUrl}
+        onChange={handleChange}
+      />
 
       <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }} disabled={loading}>
-        {loading ? "Saving…" : "Save Changes"}
+        {loading ? 'Saving...' : 'Save Changes'}
       </Button>
     </Box>
   );

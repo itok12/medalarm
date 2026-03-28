@@ -12,73 +12,39 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class MedicineExpiryService {
 
     private static final Logger log = LoggerFactory.getLogger(MedicineExpiryService.class);
 
-    private static final Pattern DURATION_PATTERN =
-            Pattern.compile("(\\d+)\\s*(day|days|week|weeks|month|months)", Pattern.CASE_INSENSITIVE);
-
     private final MedicineRepository medicineRepository;
     private final AlarmRepository alarmRepository;
 
-    public MedicineExpiryService(MedicineRepository medicineRepository,
-                                  AlarmRepository alarmRepository) {
+    public MedicineExpiryService(MedicineRepository medicineRepository, AlarmRepository alarmRepository) {
         this.medicineRepository = medicineRepository;
         this.alarmRepository = alarmRepository;
     }
 
-    @Scheduled(fixedRate = 3600000) // runs every hour (3 600 000 ms)
+    @Scheduled(fixedRate = 3600000)
     @Transactional
     public void deactivateExpiredMedicineAlarms() {
-        List<Medicine> all = medicineRepository.findAll();
+        List<Medicine> expiredMedicines = medicineRepository.findByEndDateBefore(LocalDate.now());
         LocalDate today = LocalDate.now();
 
-        for (Medicine medicine : all) {
-            if (medicine.getStartDate() == null || medicine.getDuration() == null) {
+        for (Medicine medicine : expiredMedicines) {
+            if (medicine.getEndDate() == null || !medicine.getEndDate().isBefore(today)) {
                 continue;
             }
 
-            Integer days = parseDurationToDays(medicine.getDuration());
-            if (days == null) {
-                continue;
-            }
-
-            LocalDate endDate = medicine.getStartDate().plusDays(days);
-            if (endDate.isBefore(today)) {
-                List<Alarm> alarms = alarmRepository.findByMedicine(medicine);
-                for (Alarm alarm : alarms) {
-                    if (alarm.isActive()) {
-                        alarm.setActive(false);
-                        alarmRepository.save(alarm);
-                    }
+            List<Alarm> alarms = alarmRepository.findByMedicine(medicine);
+            for (Alarm alarm : alarms) {
+                if (alarm.isActive()) {
+                    alarm.setActive(false);
+                    alarmRepository.save(alarm);
                 }
-                log.info("Deactivated alarms for expired medicine: {}", medicine.getName());
             }
+            log.info("Deactivated alarms for expired medicine: {}", medicine.getName());
         }
-    }
-
-    static Integer parseDurationToDays(String duration) {
-        if (duration == null || duration.isBlank()) {
-            return null;
-        }
-        Matcher m = DURATION_PATTERN.matcher(duration.trim());
-        if (!m.find()) {
-            return null;
-        }
-        int value = Integer.parseInt(m.group(1));
-        String unit = m.group(2).toLowerCase();
-        if (unit.startsWith("day")) {
-            return value;
-        } else if (unit.startsWith("week")) {
-            return value * 7;
-        } else if (unit.startsWith("month")) {
-            return value * 30;
-        }
-        return null;
     }
 }

@@ -20,9 +20,9 @@ public class MedicineController {
         this.medicineService = medicineService;
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Medicine>> getMedicinesForUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(medicineService.getMedicinesForUser(userId));
+    @GetMapping
+    public ResponseEntity<List<Medicine>> getMedicinesForCurrentUser() {
+        return ResponseEntity.ok(medicineService.getMedicinesForCurrentUser());
     }
 
     @PostMapping

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +23,16 @@ public class User {
     private String password;
 
     @JsonIgnore
-    private String refreshToken;
+    private String refreshTokenHash;
 
     @JsonIgnore
     private LocalDateTime refreshTokenExpiry;
+
+    private String timezone = "UTC";
+
+    private boolean emailRemindersEnabled;
+
+    private LocalTime defaultAlarmTime = LocalTime.of(8, 0);
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -76,9 +83,33 @@ public class User {
         this.medicines = medicines;
     }
 
-    public String getRefreshToken() { return refreshToken; }
-    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
+    public String getRefreshTokenHash() { return refreshTokenHash; }
+    public void setRefreshTokenHash(String refreshTokenHash) { this.refreshTokenHash = refreshTokenHash; }
 
     public LocalDateTime getRefreshTokenExpiry() { return refreshTokenExpiry; }
     public void setRefreshTokenExpiry(LocalDateTime refreshTokenExpiry) { this.refreshTokenExpiry = refreshTokenExpiry; }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public boolean isEmailRemindersEnabled() {
+        return emailRemindersEnabled;
+    }
+
+    public void setEmailRemindersEnabled(boolean emailRemindersEnabled) {
+        this.emailRemindersEnabled = emailRemindersEnabled;
+    }
+
+    public LocalTime getDefaultAlarmTime() {
+        return defaultAlarmTime;
+    }
+
+    public void setDefaultAlarmTime(LocalTime defaultAlarmTime) {
+        this.defaultAlarmTime = defaultAlarmTime;
+    }
 }

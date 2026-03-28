@@ -21,9 +21,9 @@ public class AlarmController {
         this.alarmService = alarmService;
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Alarm>> getAlarmsForUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(alarmService.getAlarmsForUser(userId));
+    @GetMapping
+    public ResponseEntity<List<Alarm>> getAlarmsForCurrentUser() {
+        return ResponseEntity.ok(alarmService.getAlarmsForCurrentUser());
     }
 
     @PostMapping

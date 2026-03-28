@@ -1,38 +1,46 @@
 import React, { createContext, useContext, useState } from 'react';
+import {
+  clearStoredUser,
+  normalizeSession,
+  normalizeTime,
+  persistUser,
+  readStoredUser,
+} from '../utils/authSession';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
-    const username = localStorage.getItem('username');
-    if (token && userId && username) {
-      return { token, userId: Number(userId), username };
-    }
-    return null;
-  });
+  const [user, setUser] = useState(() => readStoredUser());
 
-  const login = (token, userId, username, refreshToken) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('userId', userId);
-    localStorage.setItem('username', username);
-    if (refreshToken) {
-      localStorage.setItem('refreshToken', refreshToken);
-    }
-    setUser({ token, userId: Number(userId), username });
+  const login = (sessionPayload) => {
+    const nextUser = normalizeSession(sessionPayload);
+    persistUser(nextUser);
+    setUser(nextUser);
+  };
+
+  const updateUserFromProfile = (profilePayload) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const nextUser = {
+        ...prev,
+        email: profilePayload.email ?? prev.email,
+        timezone: profilePayload.timezone ?? prev.timezone,
+        emailRemindersEnabled:
+          profilePayload.emailRemindersEnabled ?? prev.emailRemindersEnabled,
+        defaultAlarmTime: normalizeTime(profilePayload.defaultAlarmTime ?? prev.defaultAlarmTime),
+      };
+      persistUser(nextUser);
+      return nextUser;
+    });
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('username');
-    localStorage.removeItem('refreshToken');
+    clearStoredUser();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUserFromProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,5 +1,7 @@
 package com.example.medapp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,8 +13,9 @@ public class MedicationLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "alarm_id")
+    @JsonIgnore
     private Alarm alarm;
 
     private LocalDateTime takenAt;
@@ -33,4 +36,19 @@ public class MedicationLog {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    @JsonProperty("alarmId")
+    public Long getAlarmId() {
+        return alarm != null ? alarm.getId() : null;
+    }
+
+    @JsonProperty("medicineId")
+    public Long getMedicineId() {
+        return alarm != null && alarm.getMedicine() != null ? alarm.getMedicine().getId() : null;
+    }
+
+    @JsonProperty("medicineName")
+    public String getMedicineName() {
+        return alarm != null && alarm.getMedicine() != null ? alarm.getMedicine().getName() : null;
+    }
 }

@@ -16,10 +16,10 @@ public class Medicine {
     private String name;
     private String dosage;
     private String frequency;
-    private String duration;
     private String instructions;
     private String imageUrl;
     private LocalDate startDate;
+    private LocalDate endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -65,14 +65,6 @@ public class Medicine {
         this.frequency = frequency;
     }
 
-    public String getDuration() {
-        return duration;
-    }
-
-    public void setDuration(String duration) {
-        this.duration = duration;
-    }
-
     public String getInstructions() {
         return instructions;
     }
@@ -97,6 +89,14 @@ public class Medicine {
         this.startDate = startDate;
     }
 
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
     public User getUser() { return user; }
 
 
@@ -105,6 +105,22 @@ public class Medicine {
     @JsonProperty("userId")
     public Long getUserId() {
         return (user != null) ? user.getId() : null;
+    }
+
+    @JsonProperty("status")
+    public String getStatus() {
+        if (endDate == null) {
+            return "ACTIVE";
+        }
+
+        LocalDate today = LocalDate.now();
+        if (endDate.isBefore(today)) {
+            return "EXPIRED";
+        }
+        if (!endDate.isAfter(today.plusDays(3))) {
+            return "EXPIRING_SOON";
+        }
+        return "ACTIVE";
     }
 
 }

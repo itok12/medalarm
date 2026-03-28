@@ -1,13 +1,15 @@
 package com.example.medapp.service;
 
+import com.example.medapp.dto.CreateAlarmRequest;
 import com.example.medapp.entity.Alarm;
+import com.example.medapp.entity.AlarmSource;
 import com.example.medapp.entity.DaysOfWeek;
 import com.example.medapp.entity.Medicine;
+import com.example.medapp.entity.User;
 import com.example.medapp.repository.AlarmRepository;
 import com.example.medapp.repository.MedicineRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.medapp.dto.CreateAlarmRequest;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -20,29 +22,36 @@ public class AlarmService {
 
     private final AlarmRepository alarmRepository;
     private final MedicineRepository medicineRepository;
+    private final CurrentUserService currentUserService;
 
-    public AlarmService(AlarmRepository alarmRepository, MedicineRepository medicineRepository) {
+    public AlarmService(
+            AlarmRepository alarmRepository,
+            MedicineRepository medicineRepository,
+            CurrentUserService currentUserService
+    ) {
         this.alarmRepository = alarmRepository;
         this.medicineRepository = medicineRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional(readOnly = true)
-    public List<Alarm> getAlarmsForUser(Long userId) {
-        return alarmRepository.findForUser(userId);
+    public List<Alarm> getAlarmsForCurrentUser() {
+        return alarmRepository.findForUser(currentUserService.getCurrentUserId());
     }
 
     @Transactional
     public List<Alarm> generateAlarmsForMedicine(Long medicineId) {
-        Medicine medicine = medicineRepository.findById(medicineId)
+        User user = currentUserService.getCurrentUser();
+        Medicine medicine = medicineRepository.findForUserById(medicineId, user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Medicine not found: " + medicineId));
 
         List<Alarm> alarms = new ArrayList<>();
+        String frequency = medicine.getFrequency() == null ? "" : medicine.getFrequency().toLowerCase();
+        if ("as needed".equals(frequency)) {
+            return alarms;
+        }
 
-        String freq = (medicine.getFrequency() == null ? "" : medicine.getFrequency()).toLowerCase();
-
-        if ("as needed".equals(freq)) return alarms;
-
-        int timesPerDay = switch (freq) {
+        int timesPerDay = switch (frequency) {
             case "once daily" -> 1;
             case "twice daily" -> 2;
             case "three times daily" -> 3;
@@ -50,19 +59,27 @@ public class AlarmService {
             default -> 1;
         };
 
-        LocalTime[] baseTimes = {
-            LocalTime.of(8, 0), LocalTime.of(14, 0), LocalTime.of(20, 0), LocalTime.of(23, 0)
+        alarmRepository.findByMedicine_IdAndMedicine_User_Id(medicineId, user.getId()).stream()
+                .filter(existing -> existing.getSource() == AlarmSource.AUTO)
+                .forEach(alarmRepository::delete);
+
+        LocalTime anchorTime = user.getDefaultAlarmTime() != null ? user.getDefaultAlarmTime() : LocalTime.of(8, 0);
+        int intervalHours = switch (timesPerDay) {
+            case 1 -> 24;
+            case 2 -> 12;
+            case 3 -> 6;
+            case 4 -> 4;
+            default -> 24;
         };
 
         var defaultDays = EnumSet.allOf(DaysOfWeek.class);
-
         for (int i = 0; i < timesPerDay; i++) {
             Alarm alarm = new Alarm();
             alarm.setMedicine(medicine);
-            alarm.setAlarmTime(baseTimes[i]);
+            alarm.setAlarmTime(anchorTime.plusHours((long) intervalHours * i));
             alarm.setActive(true);
-            // FIX: Copy EnumSet to HashSet for safely persisting to JPA
             alarm.setRepeatDays(new HashSet<>(defaultDays));
+            alarm.setSource(AlarmSource.AUTO);
             alarms.add(alarmRepository.save(alarm));
         }
 
@@ -71,46 +88,43 @@ public class AlarmService {
 
     @Transactional
     public Alarm setAlarmActive(Long alarmId, boolean isActive) {
-        Alarm alarm = alarmRepository.findById(alarmId)
-                .orElseThrow(() -> new RuntimeException("Alarm not found: " + alarmId));
+        Alarm alarm = alarmRepository.findForUserById(alarmId, currentUserService.getCurrentUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Alarm not found: " + alarmId));
         alarm.setActive(isActive);
         return alarmRepository.save(alarm);
     }
 
-
     @Transactional
     public void deleteAlarm(Long alarmId) {
-        if (!alarmRepository.existsById(alarmId)) {
-            throw new IllegalArgumentException("Alarm not found: " + alarmId);
-        }
-        alarmRepository.deleteById(alarmId);
+        Alarm alarm = alarmRepository.findForUserById(alarmId, currentUserService.getCurrentUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Alarm not found: " + alarmId));
+        alarmRepository.delete(alarm);
     }
 
     @Transactional
     public Alarm createAlarm(CreateAlarmRequest req) {
-        Medicine medicine = medicineRepository.findById(req.getMedicineId())
+        Medicine medicine = medicineRepository.findForUserById(req.getMedicineId(), currentUserService.getCurrentUserId())
                 .orElseThrow(() -> new IllegalArgumentException("Medicine not found: " + req.getMedicineId()));
 
         Alarm alarm = new Alarm();
         alarm.setMedicine(medicine);
-        
-        // Parse String alarmTime to LocalTime (e.g., "08:30", "14:45")
-        if (req.getAlarmTime() != null && !req.getAlarmTime().isEmpty()) {
-            try {
-                alarm.setAlarmTime(LocalTime.parse(req.getAlarmTime()));
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("Invalid alarmTime. Use HH:mm (e.g. 08:30)");
-            }
+        try {
+            alarm.setAlarmTime(LocalTime.parse(req.getAlarmTime()));
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Invalid alarmTime. Use HH:mm (e.g. 08:30)");
         }
-        
+
         alarm.setActive(req.isActive());
-        if (req.getRepeatDays() != null && !req.getRepeatDays().isEmpty()) {
-            var days = new HashSet<DaysOfWeek>();
-            for (String d : req.getRepeatDays()) {
-                days.add(normalizeDay(d));
-            }
-            alarm.setRepeatDays(days);
+        if (req.getRepeatDays() == null || req.getRepeatDays().isEmpty()) {
+            throw new IllegalArgumentException("At least one repeat day is required");
         }
+
+        var days = new HashSet<DaysOfWeek>();
+        for (String day : req.getRepeatDays()) {
+            days.add(normalizeDay(day));
+        }
+        alarm.setRepeatDays(days);
+        alarm.setSource(AlarmSource.MANUAL);
 
         return alarmRepository.save(alarm);
     }
@@ -128,7 +142,7 @@ public class AlarmService {
     }
 
     private String getFullDayName(String shortName) {
-        return switch(shortName) {
+        return switch (shortName) {
             case "MON" -> "MONDAY";
             case "TUE" -> "TUESDAY";
             case "WED" -> "WEDNESDAY";
@@ -139,5 +153,4 @@ public class AlarmService {
             default -> shortName;
         };
     }
-    
 }

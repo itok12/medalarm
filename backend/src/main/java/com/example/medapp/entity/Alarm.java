@@ -16,6 +16,8 @@ public class Alarm {
 
     private LocalTime alarmTime;
     private boolean active;
+    @Enumerated(EnumType.STRING)
+    private AlarmSource source = AlarmSource.MANUAL;
 
     // store enum values as text; avoid column name "day"
     @ElementCollection(targetClass = DaysOfWeek.class)
@@ -41,6 +43,14 @@ public class Alarm {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    public AlarmSource getSource() {
+        return source;
+    }
+
+    public void setSource(AlarmSource source) {
+        this.source = source;
+    }
 
     public Set<DaysOfWeek> getRepeatDays() { return repeatDays; }
     public void setRepeatDays(Set<DaysOfWeek> repeatDays) { this.repeatDays = repeatDays; }

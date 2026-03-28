@@ -3,6 +3,7 @@ services:
     name: medalarm-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /actuator/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -19,6 +20,7 @@ services:
     name: medalarm-frontend
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /
     envVars:
       - key: REACT_APP_API_BASE_URL
         value: https://medalarm-backend.onrender.com/api

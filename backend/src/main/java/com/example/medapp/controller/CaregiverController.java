@@ -1,9 +1,14 @@
 package com.example.medapp.controller;
 
+import com.example.medapp.dto.CaregiverPatientRequest;
 import com.example.medapp.entity.CaregiverRelation;
+import com.example.medapp.entity.MedicationLog;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.CaregiverRepository;
 import com.example.medapp.repository.UserRepository;
+import com.example.medapp.service.CurrentUserService;
+import com.example.medapp.service.MedicationLogService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,33 +22,34 @@ public class CaregiverController {
 
     private final CaregiverRepository caregiverRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
+    private final MedicationLogService medicationLogService;
 
     public CaregiverController(CaregiverRepository caregiverRepository,
-                                UserRepository userRepository) {
+                                UserRepository userRepository,
+                                CurrentUserService currentUserService,
+                                MedicationLogService medicationLogService) {
         this.caregiverRepository = caregiverRepository;
         this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
+        this.medicationLogService = medicationLogService;
     }
 
-    @PostMapping
-    public ResponseEntity<?> addPatient(@RequestBody Map<String, Object> body) {
-        Long caregiverId = Long.valueOf(body.get("caregiverId").toString());
-        String patientUsername = body.get("patientUsername").toString();
-
-        User caregiver = userRepository.findById(caregiverId).orElse(null);
-        if (caregiver == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Caregiver not found"));
-        }
+    @PostMapping("/patients")
+    public ResponseEntity<?> addPatient(@Valid @RequestBody CaregiverPatientRequest body) {
+        User caregiver = currentUserService.getCurrentUser();
+        String patientUsername = body.getPatientUsername();
 
         User patient = userRepository.findByUsername(patientUsername).orElse(null);
         if (patient == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Patient not found"));
         }
 
-        if (caregiverId.equals(patient.getId())) {
+        if (caregiver.getId().equals(patient.getId())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Cannot add yourself as a patient"));
         }
 
-        if (caregiverRepository.existsByCaregiverIdAndPatientId(caregiverId, patient.getId())) {
+        if (caregiverRepository.existsByCaregiverIdAndPatientId(caregiver.getId(), patient.getId())) {
             return ResponseEntity.status(409).body(Map.of("error", "Relation already exists"));
         }
 
@@ -59,9 +65,9 @@ public class CaregiverController {
         ));
     }
 
-    @GetMapping("/{caregiverId}/patients")
-    public ResponseEntity<List<Map<String, Object>>> getPatients(@PathVariable Long caregiverId) {
-        List<CaregiverRelation> relations = caregiverRepository.findByCaregiver_Id(caregiverId);
+    @GetMapping("/patients")
+    public ResponseEntity<List<Map<String, Object>>> getPatients() {
+        List<CaregiverRelation> relations = caregiverRepository.findByCaregiver_IdOrderByPatient_UsernameAsc(currentUserService.getCurrentUserId());
         List<Map<String, Object>> patients = relations.stream()
                 .map(r -> {
                     User p = r.getPatient();
@@ -73,5 +79,10 @@ public class CaregiverController {
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(patients);
+    }
+
+    @GetMapping("/patients/{patientId}/logs")
+    public ResponseEntity<List<MedicationLog>> getPatientLogs(@PathVariable Long patientId) {
+        return ResponseEntity.ok(medicationLogService.getLogsForPatient(patientId));
     }
 }

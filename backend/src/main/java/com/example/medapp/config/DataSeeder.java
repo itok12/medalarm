@@ -6,6 +6,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalTime;
+
 @Component
 public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
@@ -23,6 +25,8 @@ public class DataSeeder implements CommandLineRunner {
             u.setUsername("demo");
             u.setEmail("demo@example.com");
             u.setPassword(passwordEncoder.encode("demo123"));
+            u.setTimezone("UTC");
+            u.setDefaultAlarmTime(LocalTime.of(8, 0));
             return userRepository.save(u);
         });
     }

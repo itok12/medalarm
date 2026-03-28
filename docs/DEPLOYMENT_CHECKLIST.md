@@ -1,0 +1,26 @@
+# Deployment Checklist
+
+## Staging First
+
+1. Create a staging PostgreSQL database and duplicate the MedAlarm backend and frontend services in Render.
+2. Point staging frontend `REACT_APP_API_BASE_URL` at the staging backend.
+3. Set staging backend secrets from `.env.example`, especially `JWT_SECRET`, `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`.
+4. Keep `MAIL_ENABLED=false` in staging unless SMTP credentials are configured for test delivery.
+5. Verify the backend health endpoint at `/actuator/health` before exposing the staging frontend.
+
+## Production Gate
+
+1. Confirm Flyway migrations run cleanly on staging startup.
+2. Run the smoke checks in [STAGING_SMOKE_TESTS.md](./STAGING_SMOKE_TESTS.md).
+3. Confirm browser notifications, CSV export, and caregiver read-only access work end to end.
+4. Verify CORS settings include the production frontend origin.
+5. Rotate `JWT_SECRET` and confirm the production value is not the development default.
+6. Enable mail only after SMTP credentials, sender identity, and timezone behavior are verified.
+7. Promote the same image revisions that passed staging.
+
+## Post Deploy
+
+1. Recheck `/actuator/health`.
+2. Register a fresh user, create a medicine, generate alarms, and log a taken dose.
+3. Export CSV and confirm the file contents.
+4. Review backend logs for authorization errors, mail failures, or migration warnings.

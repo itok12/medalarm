@@ -2,12 +2,24 @@
   "short_name": "MedAlarm",
   "name": "MedAlarm - Medicine Reminder",
   "icons": [
-    { "src": "favicon.ico", "sizes": "64x64", "type": "image/x-icon" },
-    { "src": "logo192.png", "type": "image/png", "sizes": "192x192" },
-    { "src": "logo512.png", "type": "image/png", "sizes": "512x512" }
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable any"
+    }
   ],
-  "start_url": ".",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "description": "A medicine reminder app for schedules, alarms, logging, and adherence tracking.",
+  "categories": ["health", "medical", "productivity"],
   "theme_color": "#1976d2",
   "background_color": "#ffffff"
 }

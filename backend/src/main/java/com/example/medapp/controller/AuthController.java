@@ -6,14 +6,17 @@ import com.example.medapp.dto.RegisterRequest;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.UserRepository;
 import com.example.medapp.security.JwtUtil;
+import com.example.medapp.service.CurrentUserService;
+import com.example.medapp.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,13 +25,19 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
+    private final CurrentUserService currentUserService;
 
     public AuthController(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
-                          JwtUtil jwtUtil) {
+                          JwtUtil jwtUtil,
+                          RefreshTokenService refreshTokenService,
+                          CurrentUserService currentUserService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.refreshTokenService = refreshTokenService;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping("/register")
@@ -44,15 +53,15 @@ public class AuthController {
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setTimezone(resolveTimezone(req.getTimezone()));
+        user.setDefaultAlarmTime(LocalTime.of(8, 0));
 
-        String refreshToken = UUID.randomUUID().toString();
-        user.setRefreshToken(refreshToken);
-        user.setRefreshTokenExpiry(LocalDateTime.now().plusDays(7));
+        String refreshToken = refreshTokenService.rotateRefreshToken(user);
 
         User saved = userRepository.save(user);
 
         String token = jwtUtil.generateToken(saved.getUsername());
-        return ResponseEntity.ok(new AuthResponse(token, saved.getId(), saved.getUsername(), refreshToken));
+        return ResponseEntity.ok(buildAuthResponse(saved, token, refreshToken));
     }
 
     @PostMapping("/login")
@@ -65,13 +74,11 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
 
-        String refreshToken = UUID.randomUUID().toString();
-        user.setRefreshToken(refreshToken);
-        user.setRefreshTokenExpiry(LocalDateTime.now().plusDays(7));
+        String refreshToken = refreshTokenService.rotateRefreshToken(user);
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
-        return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getUsername(), refreshToken));
+        return ResponseEntity.ok(buildAuthResponse(user, token, refreshToken));
     }
 
     @PostMapping("/refresh")
@@ -81,13 +88,49 @@ public class AuthController {
             return ResponseEntity.status(401).body("Missing refreshToken");
         }
 
-        User user = userRepository.findByRefreshToken(refreshToken).orElse(null);
+        User user = refreshTokenService.findByRawToken(refreshToken);
         if (user == null || user.getRefreshTokenExpiry() == null
                 || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
             return ResponseEntity.status(401).body("Invalid or expired refresh token");
         }
 
+        String newRefreshToken = refreshTokenService.rotateRefreshToken(user);
+        userRepository.save(user);
         String newToken = jwtUtil.generateToken(user.getUsername());
-        return ResponseEntity.ok(Map.of("token", newToken));
+        return ResponseEntity.ok(buildAuthResponse(user, newToken, newRefreshToken));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        User user = currentUserService.getCurrentUser();
+        refreshTokenService.clear(user);
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("message", "Logged out"));
+    }
+
+    private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
+        return new AuthResponse(
+                accessToken,
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                refreshToken,
+                user.getTimezone(),
+                user.isEmailRemindersEnabled(),
+                user.getDefaultAlarmTime() != null ? user.getDefaultAlarmTime().toString() : null
+        );
+    }
+
+    private String resolveTimezone(String timezone) {
+        if (timezone == null || timezone.isBlank()) {
+            return "UTC";
+        }
+
+        try {
+            ZoneId.of(timezone);
+            return timezone;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Invalid timezone");
+        }
     }
 }

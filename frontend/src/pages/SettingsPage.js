@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Typography, Switch, FormControlLabel, Divider,
   Select, MenuItem, FormControl, InputLabel, Button, Snackbar, Alert,
@@ -12,9 +12,12 @@ import EmailIcon from '@mui/icons-material/Email';
 import RestoreIcon from '@mui/icons-material/Restore';
 import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PublicIcon from '@mui/icons-material/Public';
 import Navbar from '../components/Layout/Navbar';
 import { useSettings } from '../context/SettingsContext';
 import { useThemeMode } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { userAPI } from '../services/api';
 
 const ALARM_TONES = [
   { value: 'default', label: 'Default Beep' },
@@ -47,23 +50,46 @@ function SettingSection({ icon, title, children }) {
   );
 }
 
+function normalizeTime(value) {
+  if (!value) return '08:00';
+  return String(value).slice(0, 5);
+}
+
 function SettingsPage() {
   const { settings, updateSetting, resetSettings } = useSettings();
   const { mode, toggleMode } = useThemeMode();
+  const { user, updateUserFromProfile } = useAuth();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [timezoneInput, setTimezoneInput] = useState(user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+  useEffect(() => {
+    setTimezoneInput(user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, [user?.timezone]);
 
   const showMsg = (message, severity = 'success') =>
     setSnackbar({ open: true, message, severity });
 
-  const handleReset = () => {
-    resetSettings();
-    showMsg('Settings reset to defaults');
+  const saveServerSettings = async (payload, successMessage) => {
+    try {
+      const response = await userAPI.updateMe(payload);
+      updateUserFromProfile(response.data);
+      showMsg(successMessage);
+    } catch (error) {
+      const message = error.response?.data?.error || 'Failed to save server setting';
+      showMsg(message, 'error');
+    }
   };
 
-  const handleSave = () => {
-    // Settings are persisted automatically on each change via updateSetting.
-    // This button serves as a visual confirmation for the user.
-    showMsg('All settings are saved automatically as you change them');
+  const handleReset = async () => {
+    resetSettings();
+    await saveServerSettings(
+      {
+        emailRemindersEnabled: false,
+        defaultAlarmTime: '08:00',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      'Settings reset to defaults',
+    );
   };
 
   return (
@@ -73,14 +99,13 @@ function SettingsPage() {
         <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 2, sm: 3 } }}>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
-              ⚙️ Settings
+              Settings
             </Typography>
             <Typography color="text.secondary" variant="body2">
               Customize MedAlarm to suit your preferences.
             </Typography>
           </Box>
 
-          {/* Notifications */}
           <SettingSection icon={<NotificationsIcon />} title="Notifications">
             <List disablePadding>
               <ListItem disableGutters>
@@ -89,16 +114,16 @@ function SettingsPage() {
                 </ListItemIcon>
                 <ListItemText
                   primary="Notification Sound"
-                  secondary="Play a sound when an alarm fires"
+                  secondary="Play a sound when an alarm fires on this device"
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Switch
                       checked={settings.notificationSound}
-                      onChange={(e) => updateSetting('notificationSound', e.target.checked)}
+                      onChange={(event) => updateSetting('notificationSound', event.target.checked)}
                       color="primary"
                     />
-                  }
+                  )}
                   label=""
                 />
               </ListItem>
@@ -109,16 +134,20 @@ function SettingsPage() {
                 </ListItemIcon>
                 <ListItemText
                   primary="Email Reminders"
-                  secondary="Receive email notifications for missed doses (requires server configuration)"
+                  secondary="Receive reminder emails when the backend mail service is enabled"
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Switch
-                      checked={settings.emailReminders}
-                      onChange={(e) => updateSetting('emailReminders', e.target.checked)}
+                      checked={!!user?.emailRemindersEnabled}
+                      onChange={(event) =>
+                        saveServerSettings(
+                          { emailRemindersEnabled: event.target.checked },
+                          'Email reminder preference updated',
+                        )}
                       color="primary"
                     />
-                  }
+                  )}
                   label=""
                 />
               </ListItem>
@@ -129,12 +158,12 @@ function SettingsPage() {
                 </ListItemIcon>
                 <ListItemText
                   primary={`Snooze Duration: ${settings.snoozeDurationMinutes} minutes`}
-                  secondary="How long to delay an alarm when snoozed"
+                  secondary="How long to delay an alarm when snoozed on this device"
                 />
                 <Box sx={{ width: '100%', pl: 4.5 }}>
                   <Slider
                     value={settings.snoozeDurationMinutes}
-                    onChange={(_, val) => updateSetting('snoozeDurationMinutes', val)}
+                    onChange={(_, value) => updateSetting('snoozeDurationMinutes', value)}
                     min={1}
                     max={30}
                     step={1}
@@ -152,7 +181,6 @@ function SettingsPage() {
             </List>
           </SettingSection>
 
-          {/* Alarm Preferences */}
           <SettingSection icon={<MusicNoteIcon />} title="Alarm Preferences">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               <FormControl fullWidth size="small">
@@ -160,11 +188,11 @@ function SettingsPage() {
                 <Select
                   value={settings.alarmTone}
                   label="Alarm Tone"
-                  onChange={(e) => updateSetting('alarmTone', e.target.value)}
+                  onChange={(event) => updateSetting('alarmTone', event.target.value)}
                 >
-                  {ALARM_TONES.map((t) => (
-                    <MenuItem key={t.value} value={t.value}>
-                      {t.label}
+                  {ALARM_TONES.map((tone) => (
+                    <MenuItem key={tone.value} value={tone.value}>
+                      {tone.label}
                     </MenuItem>
                   ))}
                 </Select>
@@ -173,16 +201,19 @@ function SettingsPage() {
               <TextField
                 label="Default Alarm Time"
                 type="time"
-                value={settings.defaultAlarmTime}
-                onChange={(e) => updateSetting('defaultAlarmTime', e.target.value)}
+                value={normalizeTime(user?.defaultAlarmTime)}
+                onChange={(event) =>
+                  saveServerSettings(
+                    { defaultAlarmTime: event.target.value },
+                    'Default alarm time updated',
+                  )}
                 size="small"
                 InputLabelProps={{ shrink: true }}
-                helperText="Pre-fill this time when creating new alarms"
+                helperText="Used as the starting point for auto-generated schedules"
               />
             </Box>
           </SettingSection>
 
-          {/* Appearance */}
           <SettingSection icon={<PaletteIcon />} title="Appearance">
             <List disablePadding>
               <ListItem disableGutters>
@@ -194,13 +225,7 @@ function SettingsPage() {
                   secondary={`Currently using ${mode} theme`}
                 />
                 <FormControlLabel
-                  control={
-                    <Switch
-                      checked={mode === 'dark'}
-                      onChange={toggleMode}
-                      color="primary"
-                    />
-                  }
+                  control={<Switch checked={mode === 'dark'} onChange={toggleMode} color="primary" />}
                   label=""
                 />
               </ListItem>
@@ -214,43 +239,59 @@ function SettingsPage() {
                   secondary="Show more items with reduced spacing"
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Switch
                       checked={settings.compactView}
-                      onChange={(e) => updateSetting('compactView', e.target.checked)}
+                      onChange={(event) => updateSetting('compactView', event.target.checked)}
                       color="primary"
                     />
-                  }
+                  )}
                   label=""
                 />
               </ListItem>
             </List>
           </SettingSection>
 
-          {/* Regional */}
           <SettingSection icon={<CalendarTodayIcon />} title="Regional">
-            <FormControl fullWidth size="small">
-              <InputLabel>Date Format</InputLabel>
-              <Select
-                value={settings.dateFormat}
-                label="Date Format"
-                onChange={(e) => updateSetting('dateFormat', e.target.value)}
-              >
-                {DATE_FORMATS.map((f) => (
-                  <MenuItem key={f.value} value={f.value}>
-                    {f.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Date Format</InputLabel>
+                <Select
+                  value={settings.dateFormat}
+                  label="Date Format"
+                  onChange={(event) => updateSetting('dateFormat', event.target.value)}
+                >
+                  {DATE_FORMATS.map((format) => (
+                    <MenuItem key={format.value} value={format.value}>
+                      {format.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                label="Timezone"
+                size="small"
+                value={timezoneInput}
+                onChange={(event) => setTimezoneInput(event.target.value)}
+                onBlur={() => {
+                  if (timezoneInput && timezoneInput !== user?.timezone) {
+                    saveServerSettings({ timezone: timezoneInput }, 'Timezone updated');
+                  }
+                }}
+                helperText="Use an IANA timezone such as Europe/London or America/New_York"
+                InputProps={{
+                  startAdornment: <PublicIcon color="action" sx={{ mr: 1 }} />,
+                }}
+              />
+            </Box>
           </SettingSection>
 
-          {/* Actions */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
             <Button
               variant="contained"
               size="large"
-              onClick={handleSave}
+              onClick={() => showMsg('Local settings save automatically and server settings save as you change them')}
               sx={{ minWidth: 140 }}
             >
               Save Settings
@@ -272,10 +313,10 @@ function SettingsPage() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3500}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        onClose={() => setSnackbar((state) => ({ ...state, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((state) => ({ ...state, open: false }))}>
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -58,7 +58,9 @@ public class SecurityConfig {
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) ->
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                    writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                .accessDeniedHandler((request, response, accessDeniedException) ->
+                    writeJsonError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
             )
             .addFilterBefore(new RateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -81,5 +83,11 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private void writeJsonError(HttpServletResponse response, int status, String message) throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\":\"" + message + "\"}");
     }
 }

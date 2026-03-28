@@ -3,16 +3,12 @@ import {
   Box, Card, CardContent, Typography, TextField, Button,
   List, ListItem, ListItemText, ListItemButton, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Snackbar, Alert, CircularProgress
+  Paper, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import Navbar from '../components/Layout/Navbar';
-import { useAuth } from '../context/AuthContext';
 import { caregiverAPI } from '../services/api';
 
 function CaregiverPage() {
-  const { user } = useAuth();
-  const userId = user?.userId;
-
   const [patients, setPatients] = useState([]);
   const [patientUsername, setPatientUsername] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -25,32 +21,31 @@ function CaregiverPage() {
     setSnackbar({ open: true, message, severity });
 
   const fetchPatients = useCallback(async () => {
-    if (!userId) return;
     setLoadingPatients(true);
     try {
-      const res = await caregiverAPI.getPatients(userId);
-      setPatients(res.data ?? []);
+      const response = await caregiverAPI.getPatients();
+      setPatients(response.data ?? []);
     } catch {
       showMsg('Failed to load patients', 'error');
     } finally {
       setLoadingPatients(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     fetchPatients();
   }, [fetchPatients]);
 
-  const handleAddPatient = async (e) => {
-    e.preventDefault();
+  const handleAddPatient = async (event) => {
+    event.preventDefault();
     try {
-      await caregiverAPI.addPatient(userId, patientUsername);
+      await caregiverAPI.addPatient(patientUsername);
       showMsg(`Patient "${patientUsername}" added`);
       setPatientUsername('');
       fetchPatients();
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to add patient';
-      showMsg(msg, 'error');
+    } catch (error) {
+      const message = error.response?.data?.error || 'Failed to add patient';
+      showMsg(message, 'error');
     }
   };
 
@@ -58,8 +53,8 @@ function CaregiverPage() {
     setSelectedPatient(patient);
     setLoadingLogs(true);
     try {
-      const res = await caregiverAPI.getPatientLogs(patient.id, userId);
-      setPatientLogs(res.data ?? []);
+      const response = await caregiverAPI.getPatientLogs(patient.id);
+      setPatientLogs(response.data ?? []);
     } catch {
       showMsg('Failed to load patient logs', 'error');
       setPatientLogs([]);
@@ -83,7 +78,7 @@ function CaregiverPage() {
               <TextField
                 label="Patient Username"
                 value={patientUsername}
-                onChange={(e) => setPatientUsername(e.target.value)}
+                onChange={(event) => setPatientUsername(event.target.value)}
                 required
                 size="small"
                 sx={{ flexGrow: 1 }}
@@ -104,20 +99,17 @@ function CaregiverPage() {
               <Typography color="text.secondary">No patients added yet.</Typography>
             ) : (
               <List dense>
-                {patients.map((p, idx) => (
-                  <React.Fragment key={p.id}>
+                {patients.map((patient, index) => (
+                  <React.Fragment key={patient.id}>
                     <ListItem disablePadding>
                       <ListItemButton
-                        selected={selectedPatient?.id === p.id}
-                        onClick={() => handleSelectPatient(p)}
+                        selected={selectedPatient?.id === patient.id}
+                        onClick={() => handleSelectPatient(patient)}
                       >
-                        <ListItemText
-                          primary={p.username}
-                          secondary={p.email || 'No email'}
-                        />
+                        <ListItemText primary={patient.username} secondary={patient.email || 'No email'} />
                       </ListItemButton>
                     </ListItem>
-                    {idx !== patients.length - 1 && <Divider />}
+                    {index !== patients.length - 1 && <Divider />}
                   </React.Fragment>
                 ))}
               </List>
@@ -129,7 +121,7 @@ function CaregiverPage() {
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                Adherence Log — {selectedPatient.username}
+                Adherence Log - {selectedPatient.username}
               </Typography>
               {loadingLogs ? (
                 <CircularProgress size={24} />
@@ -151,11 +143,9 @@ function CaregiverPage() {
                         const takenAt = log.takenAt ? new Date(log.takenAt) : null;
                         return (
                           <TableRow key={log.id}>
-                            <TableCell>{takenAt ? takenAt.toLocaleDateString() : '—'}</TableCell>
-                            <TableCell>{takenAt ? takenAt.toLocaleTimeString() : '—'}</TableCell>
-                            <TableCell>
-                              {log.alarm?.medicine?.name || '—'}
-                            </TableCell>
+                            <TableCell>{takenAt ? takenAt.toLocaleDateString() : '-'}</TableCell>
+                            <TableCell>{takenAt ? takenAt.toLocaleTimeString() : '-'}</TableCell>
+                            <TableCell>{log.medicineName || '-'}</TableCell>
                             <TableCell>{log.status}</TableCell>
                           </TableRow>
                         );
@@ -172,9 +162,9 @@ function CaregiverPage() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
           {snackbar.message}
         </Alert>
       </Snackbar>

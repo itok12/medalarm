@@ -1,69 +1,79 @@
 import React, { useState } from 'react';
 import {
-  TextField, Button, Box, MenuItem, Alert, Typography
+  TextField, Button, Box, MenuItem, Alert, Typography,
 } from '@mui/material';
 import { medicineAPI, alarmAPI } from '../../services/api';
 
-const MedicineForm = ({ onMedicineAdded, userId }) => {
-  const [medicine, setMedicine] = useState({
-    name: '',
-    dosage: '',
-    frequency: '',
-    duration: '',
-    instructions: '',
-    imageUrl: '',
-  });
+function getTodayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
 
+const FREQUENCIES = [
+  'Once daily', 'Twice daily', 'Three times daily', 'Four times daily', 'As needed',
+];
+
+const INITIAL_MEDICINE = {
+  name: '',
+  dosage: '',
+  frequency: '',
+  instructions: '',
+  imageUrl: '',
+  startDate: getTodayIsoDate(),
+  endDate: '',
+};
+
+const MedicineForm = ({ onMedicineAdded }) => {
+  const [medicine, setMedicine] = useState(INITIAL_MEDICINE);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
 
-  const frequencies = [
-    'Once daily', 'Twice daily', 'Three times daily', 'Four times daily', 'As needed'
-  ];
-
   const validate = () => {
-    const errs = {};
-    if (!medicine.name.trim()) errs.name = 'Medicine name is required';
-    if (!medicine.dosage.trim()) errs.dosage = 'Dosage is required';
-    if (!medicine.frequency) errs.frequency = 'Frequency is required';
-    return errs;
+    const nextErrors = {};
+    if (!medicine.name.trim()) nextErrors.name = 'Medicine name is required';
+    if (!medicine.dosage.trim()) nextErrors.dosage = 'Dosage is required';
+    if (!medicine.frequency) nextErrors.frequency = 'Frequency is required';
+    if (!medicine.startDate) nextErrors.startDate = 'Start date is required';
+    if (medicine.endDate && medicine.endDate < medicine.startDate) {
+      nextErrors.endDate = 'End date must be on or after the start date';
+    }
+    return nextErrors;
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
     setMedicine((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setServerError('');
 
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
       return;
     }
 
     try {
-      const payload = { ...medicine, userId };
+      const payload = {
+        ...medicine,
+        endDate: medicine.endDate || null,
+      };
       const response = await medicineAPI.create(payload);
 
       try {
         await alarmAPI.generate(response.data.id);
-      } catch (genErr) {
-        console.error("Alarm generation failed:", genErr);
-        setServerError("Medicine saved, but failed to auto-generate alarms.");
+      } catch (generationError) {
+        console.error('Alarm generation failed:', generationError);
+        setServerError('Medicine saved, but automatic alarm generation failed.');
       }
 
       await onMedicineAdded?.();
-
-      setMedicine({
-        name: '', dosage: '', frequency: '', duration: '', instructions: '', imageUrl: '',
-      });
-    } catch (err) {
-      console.error("Medicine create failed:", err);
-      setServerError("Failed to add medicine");
+      setMedicine(INITIAL_MEDICINE);
+    } catch (error) {
+      console.error('Medicine create failed:', error);
+      setServerError(error.response?.data?.error || 'Failed to add medicine');
     }
   };
 
@@ -75,32 +85,74 @@ const MedicineForm = ({ onMedicineAdded, userId }) => {
       {serverError && <Alert severity="error" sx={{ mb: 1 }}>{serverError}</Alert>}
 
       <TextField
-        label="Medicine Name" name="name" fullWidth required margin="dense"
-        value={medicine.name} onChange={handleChange}
-        error={!!errors.name} helperText={errors.name}
+        label="Medicine Name"
+        name="name"
+        fullWidth
+        required
+        margin="dense"
+        value={medicine.name}
+        onChange={handleChange}
+        error={!!errors.name}
+        helperText={errors.name}
       />
       <TextField
-        label="Dosage (e.g. 500mg)" name="dosage" fullWidth margin="dense"
-        value={medicine.dosage} onChange={handleChange}
-        error={!!errors.dosage} helperText={errors.dosage}
+        label="Dosage (e.g. 500mg)"
+        name="dosage"
+        fullWidth
+        margin="dense"
+        value={medicine.dosage}
+        onChange={handleChange}
+        error={!!errors.dosage}
+        helperText={errors.dosage}
       />
       <TextField
-        select label="Frequency" name="frequency" fullWidth margin="dense"
-        value={medicine.frequency} onChange={handleChange}
-        error={!!errors.frequency} helperText={errors.frequency}
+        select
+        label="Frequency"
+        name="frequency"
+        fullWidth
+        margin="dense"
+        value={medicine.frequency}
+        onChange={handleChange}
+        error={!!errors.frequency}
+        helperText={errors.frequency}
       >
-        {frequencies.map((option) => (
+        {FREQUENCIES.map((option) => (
           <MenuItem key={option} value={option}>{option}</MenuItem>
         ))}
       </TextField>
       <TextField
-        label="Duration (e.g. 7 days, 2 weeks)" name="duration" fullWidth margin="dense"
-        value={medicine.duration} onChange={handleChange}
-        helperText="Optional: used to auto-deactivate alarms when course ends"
+        label="Start Date"
+        name="startDate"
+        type="date"
+        fullWidth
+        margin="dense"
+        value={medicine.startDate}
+        onChange={handleChange}
+        InputLabelProps={{ shrink: true }}
+        error={!!errors.startDate}
+        helperText={errors.startDate}
       />
       <TextField
-        label="Instructions" name="instructions" fullWidth margin="dense" multiline rows={2}
-        value={medicine.instructions} onChange={handleChange}
+        label="End Date"
+        name="endDate"
+        type="date"
+        fullWidth
+        margin="dense"
+        value={medicine.endDate}
+        onChange={handleChange}
+        InputLabelProps={{ shrink: true }}
+        error={!!errors.endDate}
+        helperText={errors.endDate || 'Optional: alarms will auto-deactivate after this date'}
+      />
+      <TextField
+        label="Instructions"
+        name="instructions"
+        fullWidth
+        margin="dense"
+        multiline
+        rows={2}
+        value={medicine.instructions}
+        onChange={handleChange}
       />
 
       <Button type="submit" variant="contained" fullWidth sx={{ mt: 1.5 }}>Add Medicine</Button>

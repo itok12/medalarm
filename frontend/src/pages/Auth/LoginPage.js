@@ -41,7 +41,7 @@ function LoginPage() {
     setLoading(true);
     try {
       const res = await authAPI.login(form);
-      login(res.data.token, res.data.userId, res.data.username, res.data.refreshToken);
+      login(res.data);
       navigate('/');
     } catch (err) {
       setServerError(extractErrorMessage(err, 'Login failed. Please check your credentials.'));

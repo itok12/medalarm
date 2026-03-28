@@ -3,31 +3,68 @@ import axios from 'axios';
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
+const STORAGE_KEYS = {
+  token: 'token',
+  userId: 'userId',
+  username: 'username',
+  email: 'email',
+  refreshToken: 'refreshToken',
+  timezone: 'timezone',
+  emailRemindersEnabled: 'emailRemindersEnabled',
+  defaultAlarmTime: 'defaultAlarmTime',
+};
+
+function normalizeTime(value) {
+  if (!value) return '08:00';
+  return String(value).slice(0, 5);
+}
+
+function persistSessionFields(data) {
+  if (data.token) localStorage.setItem(STORAGE_KEYS.token, data.token);
+  if (data.userId != null) localStorage.setItem(STORAGE_KEYS.userId, String(data.userId));
+  if (data.username) localStorage.setItem(STORAGE_KEYS.username, data.username);
+  if (Object.prototype.hasOwnProperty.call(data, 'email')) {
+    localStorage.setItem(STORAGE_KEYS.email, data.email || '');
+  }
+  if (data.refreshToken) localStorage.setItem(STORAGE_KEYS.refreshToken, data.refreshToken);
+  if (Object.prototype.hasOwnProperty.call(data, 'timezone')) {
+    localStorage.setItem(STORAGE_KEYS.timezone, data.timezone || 'UTC');
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'emailRemindersEnabled')) {
+    localStorage.setItem(STORAGE_KEYS.emailRemindersEnabled, String(!!data.emailRemindersEnabled));
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'defaultAlarmTime')) {
+    localStorage.setItem(STORAGE_KEYS.defaultAlarmTime, normalizeTime(data.defaultAlarmTime));
+  }
+}
+
+function clearSessionFields() {
+  Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT token to every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem(STORAGE_KEYS.token);
   if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Response interceptor: on 401, try to refresh the token
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
+  failedQueue.forEach((promiseHandlers) => {
     if (error) {
-      prom.reject(error);
+      promiseHandlers.reject(error);
     } else {
-      prom.resolve(token);
+      promiseHandlers.resolve(token);
     }
   });
   failedQueue = [];
@@ -37,104 +74,94 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url?.includes('/auth/')
+      !originalRequest?._retry &&
+      !originalRequest?.url?.includes('/auth/')
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             return api(originalRequest);
           })
-          .catch((err) => Promise.reject(err));
+          .catch((queueError) => Promise.reject(queueError));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
       if (!refreshToken) {
         isRefreshing = false;
-        localStorage.removeItem('token');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('username');
-        localStorage.removeItem('refreshToken');
+        clearSessionFields();
         window.location.href = '/login';
         return Promise.reject(error);
       }
 
       try {
         const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-        const newToken = response.data.token;
-        localStorage.setItem('token', newToken);
-        processQueue(null, newToken);
-        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+        persistSessionFields(response.data);
+        processQueue(null, response.data.token);
+        originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('username');
-        localStorage.removeItem('refreshToken');
+        clearSessionFields();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
 
-// Auth API
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
   refresh: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
+  logout: () => api.post('/auth/logout'),
 };
 
-// Medicine API
 export const medicineAPI = {
-  getAll: (userId) => api.get(`/medicines/user/${userId}`),
+  getAll: () => api.get('/medicines'),
   create: (medicine) => api.post('/medicines', medicine),
   update: (id, data) => api.put(`/medicines/${id}`, data),
   delete: (id) => api.delete(`/medicines/${id}`),
 };
 
-// Alarm API
 export const alarmAPI = {
-  getUserAlarms: (userId) => api.get(`/alarms/user/${userId}`),
+  getAll: () => api.get('/alarms'),
   create: (alarm) => api.post('/alarms', alarm),
   toggle: (alarmId, active) => api.patch(`/alarms/${alarmId}`, { active }),
   generate: (medicineId) => api.post('/alarms/generate', { medicineId }),
   delete: (id) => api.delete(`/alarms/${id}`),
 };
 
-// Medication Log API
 export const logAPI = {
   log: (alarmId, status) => api.post('/logs', { alarmId, status }),
-  getForUser: (userId) => api.get(`/logs/user/${userId}`),
-  exportCSV: (userId) => api.get(`/logs/user/${userId}/export`, { responseType: 'blob' }),
+  getMine: () => api.get('/logs'),
+  exportCSV: () => api.get('/logs/export', { responseType: 'blob' }),
 };
 
-// User profile API
 export const userAPI = {
-  getUser: (id) => api.get(`/users/${id}`),
-  updateProfile: (id, data) => api.put(`/users/${id}/profile`, data),
+  getMe: () => api.get('/users/me'),
+  updateMe: (data) => api.put('/users/me', data),
 };
 
-// Caregiver API
 export const caregiverAPI = {
-  addPatient: (caregiverId, patientUsername) =>
-    api.post('/caregivers', { caregiverId, patientUsername }),
-  getPatients: (caregiverId) => api.get(`/caregivers/${caregiverId}/patients`),
-  getPatientLogs: (patientId, caregiverId) =>
-    api.get(`/logs/patient/${patientId}`, { params: { caregiverId } }),
+  addPatient: (patientUsername) =>
+    api.post('/caregivers/patients', { patientUsername }),
+  getPatients: () => api.get('/caregivers/patients'),
+  getPatientLogs: (patientId) =>
+    api.get(`/caregivers/patients/${patientId}/logs`),
 };
 
+export { clearSessionFields, persistSessionFields };
 export default api;
-

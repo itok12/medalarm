@@ -10,10 +10,10 @@ public class UpdateMedicineRequest {
     private String dosage;
     @NotBlank
     private String frequency;
-    private String duration;
     private String instructions;
     private String imageUrl;
     private LocalDate startDate;
+    private LocalDate endDate;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -24,9 +24,6 @@ public class UpdateMedicineRequest {
     public String getFrequency() { return frequency; }
     public void setFrequency(String frequency) { this.frequency = frequency; }
 
-    public String getDuration() { return duration; }
-    public void setDuration(String duration) { this.duration = duration; }
-
     public String getInstructions() { return instructions; }
     public void setInstructions(String instructions) { this.instructions = instructions; }
 
@@ -35,4 +32,7 @@ public class UpdateMedicineRequest {
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 }

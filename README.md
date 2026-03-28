@@ -1,208 +1,171 @@
-# 💊 MedAlarm - Medicine Reminder App
+# MedAlarm
 
 ![CI](https://github.com/itok12/medalarm/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
-A full-stack medicine reminder application that helps users manage their medications and never miss a dose. Built with Spring Boot and React.
+MedAlarm is a full-stack medicine reminder app built with Spring Boot and React. It helps users manage medicines, generate alarm schedules, log adherence, and optionally share read-only adherence history with caregivers.
 
----
+## Features
 
-## ✨ Features
+- JWT authentication with refresh token rotation and logout
+- Actor-scoped APIs that resolve the current user from JWT instead of trusting client-supplied IDs
+- Medicine management with explicit `startDate`, optional `endDate`, and computed status labels
+- Auto-generated alarms anchored from the user's default alarm time
+- Manual alarms with repeat-day scheduling
+- Medication logging for `TAKEN`, `SKIPPED`, and `SNOOZED`
+- Seven-day adherence chart and CSV export
+- Browser notifications with snooze persistence in local storage
+- Server-backed profile settings for timezone, email reminders, and default alarm time
+- Read-only caregiver access to linked patient adherence logs
+- PWA manifest and service worker for installability and basic offline shell caching
+- Flyway schema migrations, health checks, Docker Compose, and Render deployment support
 
-- 🔐 **JWT Authentication** — Secure register/login with BCrypt password hashing and refresh tokens
-- 💊 **Medicine Management** — Add, edit, and delete medicines with dosage and frequency info
-- ⏰ **Alarm Scheduling** — Auto-generate alarms based on medicine frequency, custom alarm times, repeat days
-- ✅ **Medication Logging** — Mark doses as Taken, Skipped, or Snoozed; full adherence history
-- 📊 **Adherence Chart** — 7-day bar chart of taken vs. skipped doses (powered by Recharts)
-- ⏰ **Next Alarm Card** — Shows your next upcoming alarm with live countdown
-- 🔔 **Browser Notifications** — Real-time browser push notifications when alarm time arrives
-- ⏰ **Snooze Support** — Snooze alarms for 10 minutes from the notification
-- 📧 **Email Reminders** — Optional scheduled email reminders via Spring Mail
-- 🔄 **Token Refresh** — Automatic JWT refresh on expiry; seamless session handling
-- 🛡️ **Rate Limiting** — Bucket4j-based rate limiting on auth endpoints (10 req/min per IP)
-- 📱 **PWA Support** — Installable as a Progressive Web App on mobile and desktop
-- 🐳 **Docker Support** — Full Docker Compose setup for local development
-- 🚀 **Render Deployment** — Ready-to-deploy render.yaml configuration
-- 👤 **Profile Page** — Change password and email from a dedicated profile page
-- ⚙️ **Settings Page** — Customize notification sound, snooze duration, alarm tone, default alarm time, date format, and compact view preference (persisted to localStorage)
-- ℹ️ **About Page** — Learn about MedAlarm's mission, feature highlights, and tech stack
-- 📬 **Contact & Feedback Page** — Submit bug reports, feature requests, and general feedback; includes GitHub links
-- ❓ **Help & FAQ Page** — Answers to common questions and usage tips; links to About and Contact
-- ⏳ **Medicine Expiry Tracking** — Track start/end dates; auto-deactivate alarms after duration expires; Expired/Expiring Soon chips in the UI
-- 🌙 **Dark Mode** — Toggle between light and dark themes; preference persisted to localStorage
-- 📥 **CSV Export** — Export full adherence log as CSV from the dashboard
-- 👨‍👩‍👧 **Caregiver Mode** — Add patients by username; view their adherence logs with caregiver authorization
-- 📲 **Responsive Navigation** — Hamburger menu on mobile with full drawer navigation and active link highlighting
-
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+| --- | --- |
 | Backend | Spring Boot 3.5, Java 17 |
-| Auth | JWT (jjwt 0.11.5), BCrypt |
-| Database | H2 (dev), PostgreSQL (prod) |
+| Auth | JWT, BCrypt |
+| Database | H2 for local/test, PostgreSQL for shared environments |
 | ORM | Spring Data JPA / Hibernate |
-| Email | Spring Boot Mail (JavaMailSender) |
-| Rate Limiting | Bucket4j 7.6.0 |
+| Migrations | Flyway |
 | Frontend | React 18, React Router 6 |
-| UI | Material UI (MUI) v5 |
-| Charts | Recharts 2.8 |
-| HTTP Client | Axios |
+| UI | Material UI 5 |
+| Charts | Recharts |
+| HTTP | Axios |
 | Containerization | Docker, Docker Compose |
 
----
+## Application Routes
 
-## 📸 Screenshots
+| Route | Purpose |
+| --- | --- |
+| `/login` | Sign in |
+| `/register` | Create an account |
+| `/` | Dashboard with medicines, alarms, adherence, and next alarm |
+| `/profile` | Update email and password |
+| `/settings` | Manage local and server-backed preferences |
+| `/caregiver` | Link patients and review adherence logs |
+| `/help` | FAQ and quick usage help |
+| `/about` | Product overview |
+| `/contact` | Feedback form |
 
-> Add screenshots here
+## API Summary
 
----
+### Auth
 
-## 🗺️ Application Pages
+| Method | Endpoint |
+| --- | --- |
+| `POST` | `/api/auth/register` |
+| `POST` | `/api/auth/login` |
+| `POST` | `/api/auth/refresh` |
+| `POST` | `/api/auth/logout` |
 
-| Route | Page | Description |
-|-------|------|-------------|
-| `/login` | Sign In | Login with username and password |
-| `/register` | Register | Create a new account |
-| `/` | Dashboard | Overview of medicines, alarms, adherence chart, and next alarm |
-| `/profile` | Profile | Change password and email |
-| `/settings` | Settings | Customize notification sound, snooze duration, alarm tone, default alarm time, date format, and compact view |
-| `/caregiver` | Caregiver | Add patients and view their medication adherence logs |
-| `/help` | Help & FAQ | Frequently asked questions and quick tips |
-| `/about` | About | App mission, feature highlights, and tech stack |
-| `/contact` | Contact & Feedback | Submit bug reports, feature requests, or general feedback |
+### Self-service
 
----
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/api/users/me` |
+| `PUT` | `/api/users/me` |
+| `GET` | `/api/medicines` |
+| `POST` | `/api/medicines` |
+| `PUT` | `/api/medicines/{id}` |
+| `DELETE` | `/api/medicines/{id}` |
+| `GET` | `/api/alarms` |
+| `POST` | `/api/alarms` |
+| `POST` | `/api/alarms/generate` |
+| `PATCH` | `/api/alarms/{alarmId}` |
+| `DELETE` | `/api/alarms/{id}` |
+| `GET` | `/api/logs` |
+| `POST` | `/api/logs` |
+| `GET` | `/api/logs/export` |
 
-## 🚀 Local Development
+### Caregiver
+
+| Method | Endpoint |
+| --- | --- |
+| `POST` | `/api/caregivers/patients` |
+| `GET` | `/api/caregivers/patients` |
+| `GET` | `/api/caregivers/patients/{patientId}/logs` |
+
+## Local Development
 
 ### Without Docker
 
-**Backend:**
+Backend:
+
 ```bash
 cd backend
 ./mvnw spring-boot:run
-# API available at http://localhost:8080
 ```
 
-**Frontend:**
+Frontend:
+
 ```bash
 cd frontend
 npm install
 npm start
-# App available at http://localhost:3000
 ```
 
 ### With Docker
 
 ```bash
 docker-compose up --build
-# Backend: http://localhost:8080
-# Frontend: http://localhost:3000
-# Database: PostgreSQL on port 5432
 ```
 
----
+Default local endpoints:
 
-## 🔧 Environment Variables
+- frontend: `http://localhost:3000`
+- backend: `http://localhost:8080`
+- database: `localhost:5432`
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `JWT_SECRET` | Secret key for signing JWTs | `medalarm-super-secret-key-...` |
-| `DATABASE_URL` | PostgreSQL JDBC URL (prod) | — |
-| `DATABASE_USERNAME` | Database username (prod) | — |
-| `DATABASE_PASSWORD` | Database password (prod) | — |
-| `MAIL_HOST` | SMTP host | `smtp.gmail.com` |
-| `MAIL_PORT` | SMTP port | `587` |
-| `MAIL_USERNAME` | SMTP username/email | — |
-| `MAIL_PASSWORD` | SMTP password/app password | — |
-| `MAIL_ENABLED` | Enable email reminders | `false` |
-| `REACT_APP_API_BASE_URL` | Backend API base URL | `http://localhost:8080/api` |
+## Environment Variables
 
----
+Use [.env.example](./.env.example) as the baseline for local, staging, and production configuration.
 
-## 📡 API Endpoints
+Key variables:
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login and receive JWT + refresh token |
-| POST | `/api/auth/refresh` | Refresh JWT using refresh token |
+- `JWT_SECRET`
+- `DATABASE_URL`
+- `DATABASE_USERNAME`
+- `DATABASE_PASSWORD`
+- `MAIL_ENABLED`
+- `MAIL_HOST`
+- `MAIL_PORT`
+- `MAIL_USERNAME`
+- `MAIL_PASSWORD`
+- `CORS_ALLOWED_ORIGINS`
+- `REACT_APP_API_BASE_URL`
 
-### Medicines
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/medicines/user/{userId}` | Get all medicines for a user |
-| POST | `/api/medicines` | Create a medicine |
-| PUT | `/api/medicines/{id}` | Update a medicine |
-| DELETE | `/api/medicines/{id}` | Delete a medicine |
+## Testing
 
-### Alarms
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/alarms/user/{userId}` | Get all alarms for a user |
-| POST | `/api/alarms` | Create a custom alarm |
-| POST | `/api/alarms/generate` | Auto-generate alarms for a medicine |
-| PATCH | `/api/alarms/{alarmId}` | Toggle alarm active/inactive |
-| DELETE | `/api/alarms/{id}` | Delete an alarm |
+Backend:
 
-### Medication Logs
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/logs` | Log a medication action (TAKEN/SKIPPED/SNOOZED) |
-| GET | `/api/logs/user/{userId}` | Get all logs for a user |
-| GET | `/api/logs/user/{userId}/export` | Export adherence log as CSV |
-| GET | `/api/logs/patient/{patientId}?caregiverId={id}` | Get patient logs (caregiver only) |
+```bash
+cd backend
+mvn test
+```
 
-### Users
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/{id}` | Get user by ID |
-| PUT | `/api/users/{id}/profile` | Update password or email |
+Frontend:
 
-### Caregivers
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/caregivers` | Add a patient by username |
-| GET | `/api/caregivers/{caregiverId}/patients` | List all patients for a caregiver |
+```bash
+cd frontend
+npm test -- --watchAll=false
+npm run build
+```
 
----
+API smoke test:
 
-## 🧪 Integration Tests
+```powershell
+pwsh ./scripts/smoke-test.ps1
+```
 
-The backend includes integration tests using `@SpringBootTest` with an in-memory H2 database:
+## Deployment and Operations
 
-- **`AuthControllerTest`** — register, duplicate username, login, wrong password
-- **`MedicineControllerTest`** — create with JWT, create without JWT (401), get medicines list
+- [Deployment checklist](./docs/DEPLOYMENT_CHECKLIST.md)
+- [Staging smoke tests](./docs/STAGING_SMOKE_TESTS.md)
+- [Backup and restore](./docs/BACKUP_AND_RESTORE.md)
+- [Seed and demo data strategy](./docs/SEED_DATA.md)
 
----
+## License
 
-## ☁️ Deployment on Render
-
-1. Fork or push the repository to GitHub
-2. Connect the repository to [Render](https://render.com)
-3. Render will detect `render.yaml` and create:
-   - `medalarm-backend` (Docker web service)
-   - `medalarm-frontend` (Docker web service)
-   - `medalarm-db` (PostgreSQL database, free plan)
-4. Set any required environment variables in the Render dashboard
-5. Deploy!
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add my feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](./LICENSE).

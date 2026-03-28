@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -14,48 +14,63 @@ import {
   Typography,
   Checkbox,
   Stack,
-} from "@mui/material";
-import { alarmAPI } from "../../services/api";
+} from '@mui/material';
+import { alarmAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const DAYS = [
-  { key: "MONDAY", label: "Mon" },
-  { key: "TUESDAY", label: "Tue" },
-  { key: "WEDNESDAY", label: "Wed" },
-  { key: "THURSDAY", label: "Thu" },
-  { key: "FRIDAY", label: "Fri" },
-  { key: "SATURDAY", label: "Sat" },
-  { key: "SUNDAY", label: "Sun" },
+  { key: 'MONDAY', label: 'Mon' },
+  { key: 'TUESDAY', label: 'Tue' },
+  { key: 'WEDNESDAY', label: 'Wed' },
+  { key: 'THURSDAY', label: 'Thu' },
+  { key: 'FRIDAY', label: 'Fri' },
+  { key: 'SATURDAY', label: 'Sat' },
+  { key: 'SUNDAY', label: 'Sun' },
 ];
 
+function normalizeTime(value) {
+  if (!value) return '08:00';
+  return String(value).slice(0, 5);
+}
+
 function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
-  const defaultMedId = useMemo(() => (medicines.length ? medicines[0].id : ""), [medicines]);
+  const { user } = useAuth();
+  const defaultMedId = useMemo(() => (medicines.length ? medicines[0].id : ''), [medicines]);
 
   const [medicineId, setMedicineId] = useState(defaultMedId);
-  const [alarmTime, setAlarmTime] = useState("08:00");
-  const [repeatDays, setRepeatDays] = useState(["MONDAY"]);
+  const [alarmTime, setAlarmTime] = useState(normalizeTime(user?.defaultAlarmTime));
+  const [repeatDays, setRepeatDays] = useState(['MONDAY']);
   const [active, setActive] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!medicineId && medicines.length) setMedicineId(medicines[0].id);
   }, [medicines, medicineId]);
 
+  useEffect(() => {
+    setAlarmTime(normalizeTime(user?.defaultAlarmTime));
+  }, [user?.defaultAlarmTime]);
+
   const toggleDay = (dayKey) => {
     setRepeatDays((prev) =>
-      prev.includes(dayKey) ? prev.filter((d) => d !== dayKey) : [...prev, dayKey]
+      prev.includes(dayKey) ? prev.filter((day) => day !== dayKey) : [...prev, dayKey]
     );
   };
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setError("");
+  const submit = async (event) => {
+    event.preventDefault();
+    setError('');
 
     if (!medicineId) {
-      setError("Please select a medicine.");
+      setError('Please select a medicine.');
       return;
     }
     if (!alarmTime) {
-      setError("Please set an alarm time.");
+      setError('Please set an alarm time.');
+      return;
+    }
+    if (repeatDays.length === 0) {
+      setError('Select at least one repeat day.');
       return;
     }
 
@@ -67,10 +82,11 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
         active,
       });
 
+      setAlarmTime(normalizeTime(user?.defaultAlarmTime));
       await onAlarmCreated?.();
-    } catch (e2) {
-      console.error(e2);
-      setError("Failed to create alarm");
+    } catch (creationError) {
+      console.error(creationError);
+      setError(creationError.response?.data?.error || 'Failed to create alarm');
     }
   };
 
@@ -82,7 +98,7 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
 
       {!medicines.length && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          No medicines yet — add a medicine first.
+          No medicines yet - add a medicine first.
         </Alert>
       )}
 
@@ -99,11 +115,11 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
             labelId="medicine-select-label"
             label="Medicine"
             value={medicineId}
-            onChange={(e) => setMedicineId(e.target.value)}
+            onChange={(event) => setMedicineId(event.target.value)}
           >
-            {medicines.map((m) => (
-              <MenuItem key={m.id} value={m.id}>
-                {m.name}
+            {medicines.map((medicine) => (
+              <MenuItem key={medicine.id} value={medicine.id}>
+                {medicine.name}
               </MenuItem>
             ))}
           </Select>
@@ -114,12 +130,12 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
           label="Time"
           type="time"
           value={alarmTime}
-          onChange={(e) => setAlarmTime(e.target.value)}
+          onChange={(event) => setAlarmTime(event.target.value)}
           InputLabelProps={{ shrink: true }}
         />
 
         <FormControlLabel
-          control={<Switch checked={active} onChange={(e) => setActive(e.target.checked)} />}
+          control={<Switch checked={active} onChange={(event) => setActive(event.target.checked)} />}
           label="Active"
         />
 
@@ -129,27 +145,22 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
           </Typography>
 
           <FormGroup row sx={{ gap: 1 }}>
-            {DAYS.map((d) => (
+            {DAYS.map((day) => (
               <FormControlLabel
-                key={d.key}
-                control={
+                key={day.key}
+                control={(
                   <Checkbox
-                    checked={repeatDays.includes(d.key)}
-                    onChange={() => toggleDay(d.key)}
+                    checked={repeatDays.includes(day.key)}
+                    onChange={() => toggleDay(day.key)}
                   />
-                }
-                label={d.label}
+                )}
+                label={day.label}
               />
             ))}
           </FormGroup>
         </Box>
 
-        <Button
-          type="submit"
-          variant="contained"
-          size="large"
-          disabled={!medicines.length}
-        >
+        <Button type="submit" variant="contained" size="large" disabled={!medicines.length}>
           Create Alarm
         </Button>
       </Stack>

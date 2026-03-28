@@ -1,7 +1,12 @@
 package com.example.medapp.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class CreateLogRequest {
+    @NotNull
     private Long alarmId;
+    @NotBlank
     private String status;
 
     public Long getAlarmId() { return alarmId; }

@@ -1,12 +1,15 @@
 package com.example.medapp.controller;
 
 import com.example.medapp.dto.UpdateProfileRequest;
+import com.example.medapp.dto.UserProfileResponse;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.UserRepository;
+import com.example.medapp.service.CurrentUserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.ZoneId;
 import java.util.Map;
 
 @RestController
@@ -14,39 +17,35 @@ import java.util.Map;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
     private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserController(UserRepository userRepository, CurrentUserService currentUserService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
-        User saved = userRepository.save(user);
-        return ResponseEntity.ok(saved);
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getCurrentUser() {
+        return ResponseEntity.ok(new UserProfileResponse(currentUserService.getCurrentUser()));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+    @PutMapping("/me")
+    public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest req) {
+        User user = currentUserService.getCurrentUser();
 
-    @PutMapping("/{id}/profile")
-    public ResponseEntity<?> updateProfile(@PathVariable Long id,
-                                           @RequestBody UpdateProfileRequest req) {
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
+        boolean changingProtectedField =
+                (req.getNewPassword() != null && !req.getNewPassword().isBlank())
+                        || (req.getEmail() != null && !req.getEmail().isBlank() && !req.getEmail().equals(user.getEmail()));
 
-        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Current password is incorrect"));
+        if (changingProtectedField) {
+            if (req.getCurrentPassword() == null || req.getCurrentPassword().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Current password is required"));
+            }
+            if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Current password is incorrect"));
+            }
         }
 
         if (req.getNewPassword() != null && !req.getNewPassword().isBlank()) {
@@ -60,8 +59,25 @@ public class UserController {
             user.setEmail(req.getEmail());
         }
 
+        if (req.getTimezone() != null && !req.getTimezone().isBlank()) {
+            try {
+                ZoneId.of(req.getTimezone());
+            } catch (Exception ex) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid timezone"));
+            }
+            user.setTimezone(req.getTimezone());
+        }
+
+        if (req.getEmailRemindersEnabled() != null) {
+            user.setEmailRemindersEnabled(req.getEmailRemindersEnabled());
+        }
+
+        if (req.getDefaultAlarmTime() != null) {
+            user.setDefaultAlarmTime(req.getDefaultAlarmTime());
+        }
+
         User saved = userRepository.save(user);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(new UserProfileResponse(saved));
     }
 }
 
