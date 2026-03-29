@@ -9,13 +9,14 @@ import {
 } from '../../utils/alarmSnoozeStorage';
 import { isNativeMobilePlatform } from '../../services/nativePlatform';
 import { scheduleSnoozedReminder } from '../../services/reminderService';
-
-const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+import { captureException, trackEvent } from '../../services/telemetry';
+import { createAlarmDate, DAYS_OF_WEEK } from '../../utils/alarmTimeline';
 
 function AlarmNotifier({ alarms = [], medicines = [] }) {
   const { settings } = useSettings();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', alarmId: null });
   const notifiedRef = useRef(new Set());
+  const lastCheckRef = useRef(Date.now() - 60000);
   const [snoozed, setSnoozed] = useState(() => readStoredSnoozes());
 
   const medNameById = useMemo(() => {
@@ -35,8 +36,9 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
 
     const check = () => {
       const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const today = DAYS_OF_WEEK[now.getDay()];
+      const lastCheck = new Date(lastCheckRef.current);
+      lastCheckRef.current = now.getTime();
 
       alarms.forEach((alarm) => {
         if (!alarm.active || !alarm.repeatDays?.includes(today)) return;
@@ -44,10 +46,11 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
         const snoozeUntil = getSnoozeUntil(snoozed, alarm.id);
         if (snoozeUntil && snoozeUntil > Date.now()) return;
 
-        const alarmHHMM = alarm.alarmTime?.slice(0, 5);
-        if (alarmHHMM !== currentTime) return;
+        const scheduledFor = createAlarmDate(now, alarm.alarmTime);
+        if (scheduledFor.getTime() > now.getTime()) return;
+        if (scheduledFor.getTime() < lastCheck.getTime() - 30000) return;
 
-        const key = `${alarm.id}-${today}-${currentTime}`;
+        const key = `${alarm.id}-${today}-${scheduledFor.toISOString()}`;
         if (notifiedRef.current.has(key)) return;
         notifiedRef.current.add(key);
 
@@ -63,7 +66,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
     };
 
     check();
-    const interval = setInterval(check, 60000);
+    const interval = setInterval(check, 30000);
     return () => clearInterval(interval);
   }, [alarms, medNameById, snoozed]);
 
@@ -71,8 +74,9 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
     if (snackbar.alarmId) {
       try {
         await logAPI.log(snackbar.alarmId, 'TAKEN');
+        trackEvent('snackbar_dose_taken');
       } catch (error) {
-        console.error('Failed to log TAKEN:', error);
+        captureException(error, { source: 'AlarmNotifier.handleTaken' });
       }
     }
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -90,6 +94,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
       });
       try {
         await logAPI.log(snackbar.alarmId, 'SNOOZED');
+        trackEvent('snackbar_dose_snoozed', { minutes: settings.snoozeDurationMinutes });
         if (alarm) {
           await scheduleSnoozedReminder({
             alarmId: alarm.id,
@@ -98,7 +103,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
           });
         }
       } catch (error) {
-        console.error('Failed to log SNOOZED:', error);
+        captureException(error, { source: 'AlarmNotifier.handleSnooze' });
       }
     }
     setSnackbar((prev) => ({ ...prev, open: false }));

@@ -3,6 +3,7 @@ import {
   TextField, Button, Box, MenuItem, Alert, Typography,
 } from '@mui/material';
 import { medicineAPI, alarmAPI } from '../../services/api';
+import { captureException, trackEvent } from '../../services/telemetry';
 
 function getTodayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -64,15 +65,19 @@ const MedicineForm = ({ onMedicineAdded }) => {
 
       try {
         await alarmAPI.generate(response.data.id);
+        trackEvent('medicine_added', {
+          frequency: payload.frequency,
+          has_end_date: !!payload.endDate,
+        });
       } catch (generationError) {
-        console.error('Alarm generation failed:', generationError);
+        captureException(generationError, { source: 'MedicineForm.alarmGeneration' });
         setServerError('Medicine saved, but automatic alarm generation failed.');
       }
 
       await onMedicineAdded?.();
       setMedicine(INITIAL_MEDICINE);
     } catch (error) {
-      console.error('Medicine create failed:', error);
+      captureException(error, { source: 'MedicineForm.createMedicine' });
       setServerError(error.response?.data?.error || 'Failed to add medicine');
     }
   };

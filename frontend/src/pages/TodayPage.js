@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import AppScreen from '../components/Layout/AppScreen';
 import NextAlarmCard from '../components/Dashboard/NextAlarmCard';
 import ReminderPermissionCard from '../components/Common/ReminderPermissionCard';
+import OnboardingChecklistCard from '../components/Onboarding/OnboardingChecklistCard';
 import { useAuth } from '../context/AuthContext';
 import { useMedData } from '../context/MedDataContext';
 import { useSettings } from '../context/SettingsContext';
@@ -31,6 +32,7 @@ import {
   scheduleSnoozedReminder,
   syncNativeAlarmNotifications,
 } from '../services/reminderService';
+import { captureException, trackEvent } from '../services/telemetry';
 import { findNextAlarm, formatTime12h, getTodaysAlarms } from '../utils/alarmTimeline';
 
 function getGreeting() {
@@ -76,9 +78,10 @@ function TodayPage() {
     try {
       await logAPI.log(alarmId, status);
       await refreshAll({ background: true });
+      trackEvent('dose_logged', { status });
       showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.');
     } catch (actionError) {
-      console.error('Failed to log medication action:', actionError);
+      captureException(actionError, { source: 'TodayPage.handleLog', status });
       showMessage('Could not update this dose.', 'error');
     }
   };
@@ -94,9 +97,10 @@ function TodayPage() {
         minutes: settings.snoozeDurationMinutes,
       });
       await refreshAll({ background: true });
+      trackEvent('dose_snoozed', { minutes: settings.snoozeDurationMinutes });
       showMessage(`Reminder snoozed for ${settings.snoozeDurationMinutes} minutes.`);
     } catch (snoozeError) {
-      console.error('Failed to snooze alarm:', snoozeError);
+      captureException(snoozeError, { source: 'TodayPage.handleSnooze' });
       showMessage('Could not snooze this reminder.', 'error');
     }
   };
@@ -108,6 +112,7 @@ function TodayPage() {
       await syncNativeAlarmNotifications(alarms, medicines);
       showMessage('Reminders are enabled.');
     }
+    trackEvent('reminder_permission_requested', { status });
   };
 
   return (
@@ -117,6 +122,8 @@ function TodayPage() {
     >
       <Stack spacing={3}>
         {error && <Alert severity="error">{error}</Alert>}
+
+        <OnboardingChecklistCard />
 
         <ReminderPermissionCard status={permissionStatus} onEnable={enableReminders} />
 

@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import {
-  Box, Button, TextField, Typography, Alert, CircularProgress, Paper, Link, Fade,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Fade,
+  Link,
+  Paper,
+  TextField,
+  Typography,
 } from '@mui/material';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { trackEvent } from '../../services/telemetry';
 import { extractErrorMessage } from '../../utils/errorUtils';
 
 function RegisterPage() {
@@ -18,39 +27,44 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
-    const errs = {};
-    if (!form.username.trim()) errs.username = 'Username is required';
-    else if (form.username.length < 3) errs.username = 'Username must be at least 3 characters';
-    if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Invalid email address';
-    if (!form.password) errs.password = 'Password is required';
-    else if (form.password.length < 6) errs.password = 'Password must be at least 6 characters';
-    return errs;
+    const nextErrors = {};
+    if (!form.username.trim()) nextErrors.username = 'Username is required';
+    else if (form.username.length < 3) nextErrors.username = 'Username must be at least 3 characters';
+    if (!form.email.trim()) nextErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) nextErrors.email = 'Invalid email address';
+    if (!form.password) nextErrors.password = 'Password is required';
+    else if (form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters';
+    return nextErrors;
   };
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
+  const handleChange = (event) => {
+    setForm((previous) => ({ ...previous, [event.target.name]: event.target.value }));
+    setErrors((previous) => ({ ...previous, [event.target.name]: '' }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setServerError('');
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
       return;
     }
+
     setLoading(true);
     try {
-      const res = await authAPI.register({
+      const response = await authAPI.register({
         ...form,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
-      login(res.data);
+      login(response.data);
+      trackEvent('register_success');
       navigate('/');
-    } catch (err) {
-      setServerError(extractErrorMessage(err, 'Registration failed. Please try again.'));
+    } catch (error) {
+      setServerError(
+        extractErrorMessage(error, 'Registration failed. Please try again.')
+      );
+      trackEvent('register_failed');
     } finally {
       setLoading(false);
     }
@@ -64,7 +78,6 @@ function RegisterPage() {
         bgcolor: 'background.default',
       }}
     >
-      {/* Left accent panel — hidden on xs */}
       <Box
         sx={{
           display: { xs: 'none', md: 'flex' },
@@ -79,17 +92,16 @@ function RegisterPage() {
         }}
       >
         <Typography variant="h2" sx={{ fontWeight: 900, letterSpacing: '-1px' }}>
-          💊
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
           MedAlarm
         </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
+          Start strong
+        </Typography>
         <Typography variant="body1" sx={{ opacity: 0.85, textAlign: 'center', maxWidth: 280 }}>
-          Join thousands of patients staying on top of their medications every day.
+          Create your account and we will walk you through reminders, defaults, and your first medicine.
         </Typography>
       </Box>
 
-      {/* Right form panel */}
       <Box
         sx={{
           flex: 1,
@@ -128,7 +140,7 @@ function RegisterPage() {
                   Create your account
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Get started with MedAlarm — it&apos;s free
+                  Get started with MedAlarm for free
                 </Typography>
               </Box>
             </Box>
@@ -186,15 +198,22 @@ function RegisterPage() {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={18} color="inherit" /> : null}
               >
-                {loading ? 'Creating account…' : 'Create Account'}
+                {loading ? 'Creating account...' : 'Create Account'}
               </Button>
             </Box>
 
             <Typography sx={{ mt: 2.5, textAlign: 'center' }} variant="body2">
               Already have an account?{' '}
               <Link component={RouterLink} to="/login" sx={{ fontWeight: 700 }}>
-                Sign in →
+                Sign in
               </Link>
+            </Typography>
+            <Typography
+              sx={{ mt: 1.5, textAlign: 'center' }}
+              variant="caption"
+              color="text.secondary"
+            >
+              After signup, MedAlarm walks you through reminders, defaults, and your first medicine.
             </Typography>
           </Paper>
         </Fade>

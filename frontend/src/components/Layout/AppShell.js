@@ -24,6 +24,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import EmailIcon from '@mui/icons-material/Email';
+import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined';
+import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -35,11 +37,14 @@ import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeContext';
 import { useMedData } from '../../context/MedDataContext';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { authAPI } from '../../services/api';
 import { isNativeMobilePlatform } from '../../services/nativePlatform';
 import { syncNativeAlarmNotifications } from '../../services/reminderService';
 import PwaInstallPrompt from '../Common/PwaInstallPrompt';
 import AlarmNotifier from '../Alarm/AlarmNotifier';
+import OnboardingDialog from '../Onboarding/OnboardingDialog';
+import { captureException, trackEvent } from '../../services/telemetry';
 
 const PRIMARY_NAV_ITEMS = [
   { label: 'Today', path: '/', icon: <TodayIcon /> },
@@ -52,6 +57,8 @@ const PRIMARY_NAV_ITEMS = [
 const MORE_ITEMS = [
   { label: 'Profile', path: '/profile', icon: <PersonIcon fontSize="small" /> },
   { label: 'Help', path: '/help', icon: <HelpOutlineIcon fontSize="small" /> },
+  { label: 'Support', path: '/support', icon: <SupportAgentOutlinedIcon fontSize="small" /> },
+  { label: 'Privacy', path: '/privacy', icon: <GavelOutlinedIcon fontSize="small" /> },
   { label: 'About', path: '/about', icon: <InfoOutlinedIcon fontSize="small" /> },
   { label: 'Contact', path: '/contact', icon: <EmailIcon fontSize="small" /> },
 ];
@@ -69,6 +76,7 @@ function AppShell() {
   const { user, logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
   const { medicines, alarms, offline, refreshing, refreshAll } = useMedData();
+  const { shouldShowChecklist } = useOnboarding();
   const [menuAnchor, setMenuAnchor] = useState(null);
 
   const currentPrimaryPath = useMemo(
@@ -97,7 +105,7 @@ function AppShell() {
 
   useEffect(() => {
     syncNativeAlarmNotifications(alarms, medicines).catch((error) => {
-      console.error('Failed to sync native reminders:', error);
+      captureException(error, { source: 'AppShell.syncNativeAlarmNotifications' });
     });
   }, [alarms, medicines]);
 
@@ -108,6 +116,7 @@ function AppShell() {
       console.error('Logout request failed:', error);
     }
     logout();
+    trackEvent('logout');
     setMenuAnchor(null);
     navigate('/login');
   };
@@ -146,7 +155,11 @@ function AppShell() {
                 MedAlarm
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {user?.username ? `Welcome back, ${user.username}` : 'Your dose, on time'}
+                {user?.username
+                  ? shouldShowChecklist
+                    ? 'Finish setup for reliable reminders'
+                    : `Welcome back, ${user.username}`
+                  : 'Your dose, on time'}
               </Typography>
             </Box>
           </Box>
@@ -261,6 +274,7 @@ function AppShell() {
       )}
 
       <AlarmNotifier alarms={alarms} medicines={medicines} />
+      <OnboardingDialog />
       <PwaInstallPrompt />
     </Box>
   );

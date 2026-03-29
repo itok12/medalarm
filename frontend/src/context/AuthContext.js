@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   clearStoredUser,
   normalizeSession,
@@ -6,11 +6,16 @@ import {
   persistUser,
   readStoredUser,
 } from '../utils/authSession';
+import { setTelemetryUser } from '../services/telemetry';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readStoredUser());
+
+  useEffect(() => {
+    setTelemetryUser(user);
+  }, [user]);
 
   const login = (sessionPayload) => {
     const nextUser = normalizeSession(sessionPayload);

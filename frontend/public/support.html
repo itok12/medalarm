@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedAlarm Support</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #eef6ff;
+      --panel: #ffffff;
+      --text: #11283f;
+      --muted: #576d82;
+      --accent: #1565c0;
+      --accent-2: #00897b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1923;
+        --panel: #162231;
+        --text: #eef6ff;
+        --muted: #b4c4d3;
+      }
+    }
+    body {
+      margin: 0;
+      font-family: Manrope, system-ui, sans-serif;
+      background: linear-gradient(160deg, var(--bg), color-mix(in srgb, var(--bg) 65%, var(--accent-2) 35%));
+      color: var(--text);
+      line-height: 1.65;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px 72px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid color-mix(in srgb, var(--muted) 24%, transparent);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.08);
+    }
+    h1, h2 {
+      margin: 0 0 12px;
+      line-height: 1.1;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+    }
+    h2 {
+      font-size: 1.2rem;
+    }
+    p, li {
+      color: var(--muted);
+    }
+    a {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <p>Updated March 29, 2026</p>
+      <h1>MedAlarm Support</h1>
+      <p>Need help with reminders, onboarding, sync issues, or caregiver access? Start here.</p>
+    </section>
+    <section class="card">
+      <h2>Fastest support paths</h2>
+      <ul>
+        <li><a href="https://github.com/itok12/medalarm/issues">GitHub Issues</a> for bugs.</li>
+        <li><a href="https://github.com/itok12/medalarm/discussions">GitHub Discussions</a> for ideas and questions.</li>
+        <li><a href="/contact">In-app contact page</a> for direct product feedback.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>What to include in a report</h2>
+      <ul>
+        <li>Your device and platform.</li>
+        <li>Your timezone.</li>
+        <li>Whether notifications were allowed.</li>
+        <li>What reminder you expected.</li>
+        <li>What actually happened.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Privacy</h2>
+      <p>Review how MedAlarm handles data on the <a href="/privacy-policy.html">privacy policy page</a>.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedAlarm Privacy Policy</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f8fb;
+      --panel: #ffffff;
+      --text: #16324f;
+      --muted: #52667a;
+      --accent: #1565c0;
+      --accent-2: #00897b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1923;
+        --panel: #162231;
+        --text: #eef6ff;
+        --muted: #b4c4d3;
+      }
+    }
+    body {
+      margin: 0;
+      font-family: Manrope, system-ui, sans-serif;
+      background: linear-gradient(160deg, var(--bg), color-mix(in srgb, var(--bg) 60%, var(--accent) 40%));
+      color: var(--text);
+      line-height: 1.65;
+    }
+    main {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 48px 20px 72px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid color-mix(in srgb, var(--muted) 24%, transparent);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.08);
+    }
+    h1, h2 {
+      margin: 0 0 12px;
+      line-height: 1.1;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+    }
+    h2 {
+      font-size: 1.2rem;
+    }
+    p, li {
+      color: var(--muted);
+    }
+    a {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <p>Updated March 29, 2026</p>
+      <h1>MedAlarm Privacy Policy</h1>
+      <p>MedAlarm stores the account information, medicine schedules, reminder preferences, and adherence history needed to deliver the app experience.</p>
+    </section>
+    <section class="card">
+      <h2>What MedAlarm stores</h2>
+      <ul>
+        <li>Account details such as username, email address, password hash, timezone, and reminder defaults.</li>
+        <li>Medicines, alarms, adherence logs, and caregiver links that you explicitly create.</li>
+        <li>Optional telemetry for analytics and crash reporting when deployment-level environment variables enable those integrations.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>What MedAlarm does not do</h2>
+      <ul>
+        <li>Sell personal data.</li>
+        <li>Share your adherence history with other users by default.</li>
+        <li>Allow caregivers to edit your medicines or alarms in this version.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Questions</h2>
+      <p>If you need help or want to request data changes, use the support page or contact links available in the MedAlarm app and repository.</p>
+      <p><a href="/support.html">Open support page</a></p>
+    </section>
+  </main>
+</body>
+</html>

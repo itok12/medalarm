@@ -3,6 +3,10 @@ frontend/node_modules/
 frontend/build/
 frontend/android/.gradle/
 frontend/android/app/build/
+frontend/android/*.jks
+frontend/android/*.keystore
+frontend/android/keystore.properties
+frontend/android/local.properties
 frontend/ios/App/build/
 frontend/ios/DerivedData/
 

@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { alarmAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { captureException, trackEvent } from '../../services/telemetry';
 
 const DAYS = [
   { key: 'MONDAY', label: 'Mon' },
@@ -83,9 +84,10 @@ function CreateAlarmForm({ medicines = [], onAlarmCreated }) {
       });
 
       setAlarmTime(normalizeTime(user?.defaultAlarmTime));
+      trackEvent('manual_alarm_created', { repeat_day_count: repeatDays.length });
       await onAlarmCreated?.();
     } catch (creationError) {
-      console.error(creationError);
+      captureException(creationError, { source: 'CreateAlarmForm.createAlarm' });
       setError(creationError.response?.data?.error || 'Failed to create alarm');
     }
   };

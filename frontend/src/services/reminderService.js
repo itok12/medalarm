@@ -1,8 +1,10 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativeMobilePlatform } from './nativePlatform';
 import { buildUpcomingAlarmInstances } from '../utils/alarmTimeline';
+import { getJson, setJson } from './deviceStorage';
 
 const CHANNEL_ID = 'medalarm-reminders';
+const REMINDER_SYNC_KEY = 'medalarm-native-reminder-sync-v1';
 
 function buildMedicineLookup(medicines = []) {
   const map = new Map();
@@ -22,6 +24,17 @@ async function ensureAndroidChannel() {
   } catch {
     // Channel creation is only relevant on Android and can be ignored elsewhere.
   }
+}
+
+function buildReminderFingerprint(instances = []) {
+  return JSON.stringify(
+    instances.map(({ alarm, scheduledFor }) => ({
+      id: alarm.id,
+      medicineId: alarm.medicineId,
+      alarmTime: alarm.alarmTime,
+      scheduledFor: scheduledFor.toISOString(),
+    }))
+  );
 }
 
 export async function getReminderPermissionStatus() {
@@ -65,13 +78,21 @@ export async function syncNativeAlarmNotifications(alarms = [], medicines = []) 
 
   await ensureAndroidChannel();
 
+  const upcomingInstances = buildUpcomingAlarmInstances(alarms, 7);
+  const nextFingerprint = buildReminderFingerprint(upcomingInstances);
+  const previousFingerprint = await getJson(REMINDER_SYNC_KEY, '');
+
+  if (previousFingerprint === nextFingerprint) {
+    return;
+  }
+
   const pending = await LocalNotifications.getPending();
   if (pending.notifications?.length) {
     await LocalNotifications.cancel({ notifications: pending.notifications.map(({ id }) => ({ id })) });
   }
 
   const medicineLookup = buildMedicineLookup(medicines);
-  const notifications = buildUpcomingAlarmInstances(alarms, 7).map(({ alarm, scheduledFor }, index) => {
+  const notifications = upcomingInstances.map(({ alarm, scheduledFor }, index) => {
     const medicine = medicineLookup.get(alarm.medicineId);
     const medicineName = medicine?.name || 'your medicine';
 
@@ -94,6 +115,8 @@ export async function syncNativeAlarmNotifications(alarms = [], medicines = []) 
   if (notifications.length) {
     await LocalNotifications.schedule({ notifications });
   }
+
+  await setJson(REMINDER_SYNC_KEY, nextFingerprint);
 }
 
 export async function scheduleSnoozedReminder({ alarmId, medicineName, dosage, minutes }) {

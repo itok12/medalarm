@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeContextProvider, useThemeMode } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { MedDataProvider } from './context/MedDataContext';
+import { OnboardingProvider } from './context/OnboardingContext';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import TodayPage from './pages/TodayPage';
@@ -17,7 +18,10 @@ import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import PrivacyPage from './pages/PrivacyPage';
+import SupportPage from './pages/SupportPage';
 import AppShell from './components/Layout/AppShell';
+import RouteTelemetry from './components/Common/RouteTelemetry';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -35,7 +39,9 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <MedDataProvider>
-              <AppShell />
+              <OnboardingProvider>
+                <AppShell />
+              </OnboardingProvider>
             </MedDataProvider>
           </ProtectedRoute>
         }
@@ -49,6 +55,8 @@ function AppRoutes() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="contact" element={<ContactPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="support" element={<SupportPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -127,6 +135,7 @@ function ThemedApp() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
+        <RouteTelemetry />
         <AppRoutes />
       </BrowserRouter>
     </ThemeProvider>
