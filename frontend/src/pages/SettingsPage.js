@@ -13,7 +13,7 @@ import RestoreIcon from '@mui/icons-material/Restore';
 import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PublicIcon from '@mui/icons-material/Public';
-import Navbar from '../components/Layout/Navbar';
+import AppScreen from '../components/Layout/AppScreen';
 import { useSettings } from '../context/SettingsContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -93,19 +93,13 @@ function SettingsPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Navbar />
+    <AppScreen
+      title="Settings"
+      subtitle="Tune reminders, appearance, and regional preferences for each device and account."
+      maxWidth={760}
+    >
       <Fade in timeout={400}>
-        <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
-              Settings
-            </Typography>
-            <Typography color="text.secondary" variant="body2">
-              Customize MedAlarm to suit your preferences.
-            </Typography>
-          </Box>
-
+        <Box>
           <SettingSection icon={<NotificationsIcon />} title="Notifications">
             <List disablePadding>
               <ListItem disableGutters>
@@ -320,7 +314,7 @@ function SettingsPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </AppScreen>
   );
 }
 

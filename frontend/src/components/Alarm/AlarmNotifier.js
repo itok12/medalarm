@@ -7,6 +7,8 @@ import {
   persistSnoozes,
   readStoredSnoozes,
 } from '../../utils/alarmSnoozeStorage';
+import { isNativeMobilePlatform } from '../../services/nativePlatform';
+import { scheduleSnoozedReminder } from '../../services/reminderService';
 
 const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -27,13 +29,10 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
   }, [snoozed]);
 
   useEffect(() => {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
+    if (isNativeMobilePlatform()) {
+      return undefined;
     }
-  }, []);
 
-  useEffect(() => {
     const check = () => {
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -81,6 +80,8 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
 
   const handleSnooze = async () => {
     if (snackbar.alarmId) {
+      const alarm = alarms.find((entry) => entry.id === snackbar.alarmId);
+      const medicineName = alarm ? medNameById.get(alarm.medicineId) : 'your medicine';
       const snoozeUntil = Date.now() + settings.snoozeDurationMinutes * 60000;
       setSnoozed((prev) => {
         const next = new Map(prev);
@@ -89,6 +90,13 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
       });
       try {
         await logAPI.log(snackbar.alarmId, 'SNOOZED');
+        if (alarm) {
+          await scheduleSnoozedReminder({
+            alarmId: alarm.id,
+            medicineName,
+            minutes: settings.snoozeDurationMinutes,
+          });
+        }
       } catch (error) {
         console.error('Failed to log SNOOZED:', error);
       }

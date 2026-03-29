@@ -1,6 +1,10 @@
 # Frontend build artifacts
 frontend/node_modules/
 frontend/build/
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/ios/App/build/
+frontend/ios/DerivedData/
 
 # Backend build artifacts
 backend/target/

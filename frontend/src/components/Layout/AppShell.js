@@ -1,0 +1,269 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  AppBar,
+  BottomNavigation,
+  BottomNavigationAction,
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Menu,
+  MenuItem,
+  Paper,
+  Toolbar,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
+import TodayIcon from '@mui/icons-material/Today';
+import MedicationIcon from '@mui/icons-material/Medication';
+import InsightsIcon from '@mui/icons-material/Insights';
+import GroupIcon from '@mui/icons-material/Group';
+import SettingsIcon from '@mui/icons-material/Settings';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import PersonIcon from '@mui/icons-material/Person';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import EmailIcon from '@mui/icons-material/Email';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { App as CapacitorApp } from '@capacitor/app';
+import { StatusBar } from '@capacitor/status-bar';
+import { useTheme } from '@mui/material/styles';
+import { useAuth } from '../../context/AuthContext';
+import { useThemeMode } from '../../context/ThemeContext';
+import { useMedData } from '../../context/MedDataContext';
+import { authAPI } from '../../services/api';
+import { isNativeMobilePlatform } from '../../services/nativePlatform';
+import { syncNativeAlarmNotifications } from '../../services/reminderService';
+import PwaInstallPrompt from '../Common/PwaInstallPrompt';
+import AlarmNotifier from '../Alarm/AlarmNotifier';
+
+const PRIMARY_NAV_ITEMS = [
+  { label: 'Today', path: '/', icon: <TodayIcon /> },
+  { label: 'Medicines', path: '/medicines', icon: <MedicationIcon /> },
+  { label: 'History', path: '/history', icon: <InsightsIcon /> },
+  { label: 'Care', path: '/caregiver', icon: <GroupIcon /> },
+  { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
+];
+
+const MORE_ITEMS = [
+  { label: 'Profile', path: '/profile', icon: <PersonIcon fontSize="small" /> },
+  { label: 'Help', path: '/help', icon: <HelpOutlineIcon fontSize="small" /> },
+  { label: 'About', path: '/about', icon: <InfoOutlinedIcon fontSize="small" /> },
+  { label: 'Contact', path: '/contact', icon: <EmailIcon fontSize="small" /> },
+];
+
+function getCurrentPrimaryPath(pathname) {
+  const match = PRIMARY_NAV_ITEMS.find((item) => item.path !== '/' && pathname.startsWith(item.path));
+  return match?.path || '/';
+}
+
+function AppShell() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const { user, logout } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
+  const { medicines, alarms, offline, refreshing, refreshAll } = useMedData();
+  const [menuAnchor, setMenuAnchor] = useState(null);
+
+  const currentPrimaryPath = useMemo(
+    () => getCurrentPrimaryPath(location.pathname),
+    [location.pathname]
+  );
+
+  useEffect(() => {
+    if (!isNativeMobilePlatform()) {
+      return undefined;
+    }
+
+    SplashScreen.hide().catch(() => {});
+    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+
+    const listenerPromise = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        refreshAll({ background: true });
+      }
+    });
+
+    return () => {
+      listenerPromise.then((listener) => listener.remove()).catch(() => {});
+    };
+  }, [refreshAll]);
+
+  useEffect(() => {
+    syncNativeAlarmNotifications(alarms, medicines).catch((error) => {
+      console.error('Failed to sync native reminders:', error);
+    });
+  }, [alarms, medicines]);
+
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    }
+    logout();
+    setMenuAnchor(null);
+    navigate('/login');
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        color="transparent"
+        sx={{
+          bgcolor: 'background.paper',
+          borderBottom: (muiTheme) => `1px solid ${muiTheme.palette.divider}`,
+          color: 'text.primary',
+          backdropFilter: 'blur(16px)',
+        }}
+      >
+        <Toolbar sx={{ gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: 3,
+                display: 'grid',
+                placeItems: 'center',
+                color: '#fff',
+                background: 'linear-gradient(135deg, #0d47a1 0%, #00897b 100%)',
+                fontWeight: 900,
+              }}
+            >
+              M
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1 }}>
+                MedAlarm
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.username ? `Welcome back, ${user.username}` : 'Your dose, on time'}
+              </Typography>
+            </Box>
+          </Box>
+
+          {isDesktop && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 3 }}>
+              {PRIMARY_NAV_ITEMS.map((item) => (
+                <Button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  startIcon={item.icon}
+                  color={currentPrimaryPath === item.path ? 'primary' : 'inherit'}
+                  variant={currentPrimaryPath === item.path ? 'contained' : 'text'}
+                  sx={{ minWidth: 'auto' }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+          )}
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          {offline && (
+            <Chip
+              label="Offline view"
+              color="warning"
+              size="small"
+              variant="outlined"
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+            />
+          )}
+          {refreshing && (
+            <Chip
+              label="Syncing"
+              color="primary"
+              size="small"
+              variant="outlined"
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+            />
+          )}
+
+          <IconButton onClick={toggleMode} color="inherit">
+            {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+          <IconButton color="inherit" onClick={(event) => setMenuAnchor(event.currentTarget)}>
+            <MoreHorizIcon />
+          </IconButton>
+
+          <Menu
+            anchorEl={menuAnchor}
+            open={!!menuAnchor}
+            onClose={() => setMenuAnchor(null)}
+            keepMounted
+          >
+            {MORE_ITEMS.map((item) => (
+              <MenuItem
+                key={item.path}
+                onClick={() => {
+                  setMenuAnchor(null);
+                  navigate(item.path);
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  {item.icon}
+                  {item.label}
+                </Box>
+              </MenuItem>
+            ))}
+            <MenuItem onClick={handleLogout}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: 'error.main' }}>
+                <LogoutIcon fontSize="small" />
+                Logout
+              </Box>
+            </MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+
+      <Box sx={{ pb: { xs: 'calc(84px + env(safe-area-inset-bottom))', md: 4 } }}>
+        <Outlet />
+      </Box>
+
+      {!isDesktop && (
+        <Paper
+          elevation={12}
+          sx={{
+            position: 'fixed',
+            left: 12,
+            right: 12,
+            bottom: 'calc(12px + env(safe-area-inset-bottom))',
+            borderRadius: 4,
+            overflow: 'hidden',
+            zIndex: (muiTheme) => muiTheme.zIndex.appBar,
+          }}
+        >
+          <BottomNavigation
+            value={currentPrimaryPath}
+            onChange={(_, nextValue) => navigate(nextValue)}
+            showLabels
+          >
+            {PRIMARY_NAV_ITEMS.map((item) => (
+              <BottomNavigationAction
+                key={item.path}
+                label={item.label}
+                value={item.path}
+                icon={item.icon}
+              />
+            ))}
+          </BottomNavigation>
+        </Paper>
+      )}
+
+      <AlarmNotifier alarms={alarms} medicines={medicines} />
+      <PwaInstallPrompt />
+    </Box>
+  );
+}
+
+export default AppShell;

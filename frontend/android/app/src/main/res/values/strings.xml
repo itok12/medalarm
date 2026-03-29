@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MedAlarm</string>
+    <string name="title_activity_main">MedAlarm</string>
+    <string name="package_name">com.medalarm.app</string>
+    <string name="custom_url_scheme">com.medalarm.app</string>
+</resources>

@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
-import Navbar from '../components/Layout/Navbar';
+import AppScreen from '../components/Layout/AppScreen';
 import { caregiverAPI } from '../services/api';
 
 function CaregiverPage() {
@@ -64,13 +64,12 @@ function CaregiverPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Navbar />
-      <Box sx={{ maxWidth: 900, mx: 'auto', p: 3 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
-          Caregiver Mode
-        </Typography>
-
+    <AppScreen
+      title="Caregiver"
+      subtitle="Link patients by username and review their adherence history with read-only access."
+      maxWidth={950}
+    >
+      <Box>
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Add Patient</Typography>
@@ -168,7 +167,7 @@ function CaregiverPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </AppScreen>
   );
 }
 

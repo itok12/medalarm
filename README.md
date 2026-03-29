@@ -15,6 +15,8 @@ MedAlarm is a full-stack medicine reminder app built with Spring Boot and React.
 - Medication logging for `TAKEN`, `SKIPPED`, and `SNOOZED`
 - Seven-day adherence chart and CSV export
 - Browser notifications with snooze persistence in local storage
+- Native mobile foundation for iOS and Android via Capacitor
+- Mobile-first Today, Medicines, History, Caregiver, and Settings experience
 - Server-backed profile settings for timezone, email reminders, and default alarm time
 - Read-only caregiver access to linked patient adherence logs
 - PWA manifest and service worker for installability and basic offline shell caching
@@ -33,6 +35,7 @@ MedAlarm is a full-stack medicine reminder app built with Spring Boot and React.
 | UI | Material UI 5 |
 | Charts | Recharts |
 | HTTP | Axios |
+| Mobile Runtime | Capacitor |
 | Containerization | Docker, Docker Compose |
 
 ## Application Routes
@@ -41,7 +44,9 @@ MedAlarm is a full-stack medicine reminder app built with Spring Boot and React.
 | --- | --- |
 | `/login` | Sign in |
 | `/register` | Create an account |
-| `/` | Dashboard with medicines, alarms, adherence, and next alarm |
+| `/` | Today screen with next dose and quick actions |
+| `/medicines` | Medicines and alarm management |
+| `/history` | Adherence chart and recent logs |
 | `/profile` | Update email and password |
 | `/settings` | Manage local and server-backed preferences |
 | `/caregiver` | Link patients and review adherence logs |
@@ -106,6 +111,13 @@ npm install
 npm start
 ```
 
+Native mobile sync:
+
+```bash
+cd frontend
+npm run mobile:sync
+```
+
 ### With Docker
 
 ```bash
@@ -151,6 +163,15 @@ Frontend:
 cd frontend
 npm test -- --watchAll=false
 npm run build
+```
+
+Mobile projects:
+
+```bash
+cd frontend
+npm run mobile:sync
+npm run mobile:open:android
+npm run mobile:open:ios
 ```
 
 API smoke test:

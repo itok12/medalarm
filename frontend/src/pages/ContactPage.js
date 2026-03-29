@@ -1,21 +1,36 @@
 import React, { useState } from 'react';
 import {
-  Box, Card, CardContent, Typography, TextField, Button, Divider,
-  Snackbar, Alert, Fade, MenuItem, Select, FormControl, InputLabel,
-  List, ListItem, ListItemIcon, ListItemText,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Divider,
+  Fade,
+  FormControl,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  Select,
+  Snackbar,
+  Alert,
+  TextField,
+  Typography,
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import Navbar from '../components/Layout/Navbar';
+import AppScreen from '../components/Layout/AppScreen';
 
 const FEEDBACK_TYPES = [
-  { value: 'bug', label: '🐛 Bug Report', icon: <BugReportIcon color="error" fontSize="small" /> },
-  { value: 'feature', label: '💡 Feature Request', icon: <LightbulbIcon color="warning" fontSize="small" /> },
-  { value: 'general', label: '👍 General Feedback', icon: <ThumbUpIcon color="success" fontSize="small" /> },
-  { value: 'other', label: '✉️ Other', icon: <EmailIcon color="primary" fontSize="small" /> },
+  { value: 'bug', label: 'Bug report', icon: <BugReportIcon color="error" fontSize="small" /> },
+  { value: 'feature', label: 'Feature request', icon: <LightbulbIcon color="warning" fontSize="small" /> },
+  { value: 'general', label: 'General feedback', icon: <ThumbUpIcon color="success" fontSize="small" /> },
+  { value: 'other', label: 'Other', icon: <EmailIcon color="primary" fontSize="small" /> },
 ];
 
 const CONTACT_LINKS = [
@@ -40,32 +55,31 @@ function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const validate = () => {
-    const errs = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email address';
-    if (!form.message.trim()) errs.message = 'Message is required';
-    else if (form.message.trim().length < 10) errs.message = 'Please provide at least 10 characters';
-    return errs;
+    const nextErrors = {};
+    if (!form.name.trim()) nextErrors.name = 'Name is required';
+    if (!form.email.trim()) nextErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) nextErrors.email = 'Enter a valid email address';
+    if (!form.message.trim()) nextErrors.message = 'Message is required';
+    else if (form.message.trim().length < 10) nextErrors.message = 'Please provide at least 10 characters';
+    return nextErrors;
   };
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleChange = (field) => (event) => {
+    setForm((prev) => ({ ...prev, [field]: event.target.value }));
     setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
       return;
     }
-    // In a real app, this would call an API endpoint.
-    // For now, we show a success message and log the feedback.
+
     console.info('Feedback submitted:', form);
     setSubmitted(true);
-    setSnackbar({ open: true, message: 'Thank you! Your feedback has been recorded.', severity: 'success' });
+    setSnackbar({ open: true, message: 'Thank you. Your feedback has been recorded.', severity: 'success' });
   };
 
   const handleReset = () => {
@@ -75,31 +89,21 @@ function ContactPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Navbar />
+    <AppScreen
+      title="Contact & Feedback"
+      subtitle="Share bugs, ideas, or general feedback that can help MedAlarm improve."
+      maxWidth={760}
+    >
       <Fade in timeout={400}>
-        <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
-              📬 Contact &amp; Feedback
-            </Typography>
-            <Typography color="text.secondary" variant="body2">
-              We love hearing from you — report bugs, suggest features, or just say hello.
-            </Typography>
-          </Box>
-
+        <Box>
           {!submitted ? (
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                  Send Feedback
+                  Send feedback
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
-                <Box
-                  component="form"
-                  onSubmit={handleSubmit}
-                  sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
-                >
+                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <TextField
                       label="Your Name"
@@ -129,9 +133,9 @@ function ContactPage() {
                       label="Feedback Type"
                       onChange={handleChange('feedbackType')}
                     >
-                      {FEEDBACK_TYPES.map((t) => (
-                        <MenuItem key={t.value} value={t.value}>
-                          {t.label}
+                      {FEEDBACK_TYPES.map((type) => (
+                        <MenuItem key={type.value} value={type.value}>
+                          {type.label}
                         </MenuItem>
                       ))}
                     </Select>
@@ -146,7 +150,7 @@ function ContactPage() {
                     required
                     multiline
                     rows={5}
-                    placeholder="Describe your feedback, bug, or idea in detail…"
+                    placeholder="Describe the issue, idea, or feedback in a bit of detail."
                   />
 
                   <Button
@@ -156,7 +160,7 @@ function ContactPage() {
                     startIcon={<EmailIcon />}
                     sx={{ alignSelf: 'flex-start', minWidth: 160 }}
                   >
-                    Send Feedback
+                    Send feedback
                   </Button>
                 </Box>
               </CardContent>
@@ -165,32 +169,29 @@ function ContactPage() {
             <Fade in timeout={500}>
               <Card sx={{ mb: 3, borderColor: 'success.main', borderWidth: 2, borderStyle: 'solid' }}>
                 <CardContent sx={{ textAlign: 'center', py: 5 }}>
-                  <Typography variant="h2" sx={{ mb: 2 }}>🎉</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                    Thank You!
+                  <Typography variant="h4" sx={{ mb: 2 }}>
+                    Thank you
                   </Typography>
                   <Typography color="text.secondary" sx={{ mb: 3 }}>
-                    Your feedback has been recorded. We read every message and use it to improve
-                    MedAlarm for everyone.
+                    Your feedback has been recorded. We read every message and use it to improve MedAlarm.
                   </Typography>
                   <Button variant="outlined" onClick={handleReset}>
-                    Send Another Message
+                    Send another message
                   </Button>
                 </CardContent>
               </Card>
             </Fade>
           )}
 
-          {/* Contact links */}
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                Other Ways to Reach Us
+                Other ways to reach us
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <List disablePadding>
-                {CONTACT_LINKS.map((link, i) => (
-                  <React.Fragment key={i}>
+                {CONTACT_LINKS.map((link, index) => (
+                  <React.Fragment key={link.primary}>
                     <ListItem
                       component="a"
                       href={link.href}
@@ -210,7 +211,7 @@ function ContactPage() {
                         secondary={link.secondary}
                       />
                     </ListItem>
-                    {i < CONTACT_LINKS.length - 1 && <Divider component="li" />}
+                    {index < CONTACT_LINKS.length - 1 && <Divider component="li" />}
                   </React.Fragment>
                 ))}
               </List>
@@ -222,14 +223,14 @@ function ContactPage() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        onClose={() => setSnackbar((state) => ({ ...state, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((state) => ({ ...state, open: false }))}>
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </AppScreen>
   );
 }
 

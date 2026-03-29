@@ -1,7 +1,14 @@
 import React from 'react';
 import {
-  Box, Card, CardContent, Typography, Divider, Link, Chip,
-  Grid, Fade,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Grid,
+  Link,
+  Typography,
+  Fade,
 } from '@mui/material';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
@@ -11,117 +18,115 @@ import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 import GroupIcon from '@mui/icons-material/Group';
 import CodeIcon from '@mui/icons-material/Code';
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import Navbar from '../components/Layout/Navbar';
+import AppScreen from '../components/Layout/AppScreen';
 
 const FEATURES = [
   {
     icon: <MedicalServicesIcon color="primary" />,
     title: 'Medicine Management',
-    desc: 'Add, edit, and track all your medications with dosage and schedule info.',
+    desc: 'Track medicines with dosage, schedule, start date, and end date support.',
   },
   {
     icon: <NotificationsActiveIcon color="primary" />,
-    title: 'Smart Alarms',
-    desc: 'Auto-generate alarms from your medicine schedule with snooze and repeat options.',
+    title: 'Native Reminders',
+    desc: 'MedAlarm now supports native mobile reminders on iOS and Android in addition to the web app.',
   },
   {
     icon: <BarChartIcon color="primary" />,
     title: 'Adherence Tracking',
-    desc: 'Visual 7-day chart showing your medication adherence history.',
+    desc: 'Review taken, skipped, and snoozed activity through a focused history experience.',
   },
   {
     icon: <SecurityIcon color="primary" />,
-    title: 'Secure & Private',
-    desc: 'JWT authentication, bcrypt passwords, and rate limiting keep your data safe.',
+    title: 'Secure by Default',
+    desc: 'Actor-scoped APIs, JWT auth, refresh token rotation, and guarded caregiver access.',
   },
   {
     icon: <PhoneAndroidIcon color="primary" />,
-    title: 'PWA Support',
-    desc: 'Install MedAlarm on your phone like a native app via "Add to Home Screen".',
+    title: 'Cross Platform',
+    desc: 'A single React codebase now powers the web experience and native shells through Capacitor.',
   },
   {
     icon: <GroupIcon color="primary" />,
-    title: 'Caregiver Mode',
-    desc: 'Let caregivers monitor patient adherence to ensure compliance.',
+    title: 'Caregiver Visibility',
+    desc: 'Caregivers can monitor linked patients without being able to edit medicines or alarms.',
   },
 ];
 
 const TECH_STACK = [
   { label: 'React 18', color: 'primary' },
-  { label: 'Material UI v5', color: 'secondary' },
-  { label: 'Spring Boot 3', color: 'default' },
+  { label: 'Material UI', color: 'secondary' },
+  { label: 'Spring Boot', color: 'default' },
   { label: 'PostgreSQL', color: 'default' },
-  { label: 'JWT Auth', color: 'default' },
-  { label: 'Recharts', color: 'default' },
-  { label: 'PWA', color: 'primary' },
+  { label: 'Flyway', color: 'default' },
+  { label: 'Capacitor', color: 'primary' },
   { label: 'Docker', color: 'default' },
 ];
 
 function AboutPage() {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Navbar />
+    <AppScreen
+      title="About MedAlarm"
+      subtitle="Why MedAlarm exists, what it helps people do, and how the app is built."
+      maxWidth={960}
+    >
       <Fade in timeout={400}>
-        <Box sx={{ maxWidth: 900, mx: 'auto', p: { xs: 2, sm: 3 } }}>
-          {/* Hero */}
+        <Box>
           <Card
             sx={{
               mb: 4,
               background: (theme) =>
                 theme.palette.mode === 'dark'
-                  ? 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)'
-                  : 'linear-gradient(135deg, #1565c0 0%, #0288d1 100%)',
+                  ? 'linear-gradient(135deg, #102146 0%, #0d47a1 55%, #0f766e 100%)'
+                  : 'linear-gradient(135deg, #1565c0 0%, #0288d1 55%, #0f766e 100%)',
               color: '#fff',
             }}
           >
             <CardContent sx={{ py: 5, textAlign: 'center' }}>
-              <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.5px' }}>
-                💊 MedAlarm
+              <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.04em' }}>
+                MedAlarm
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9, fontWeight: 400, mb: 2 }}>
-                Your personal medicine reminder & adherence companion
+              <Typography variant="h6" sx={{ opacity: 0.92, fontWeight: 400, mb: 2 }}>
+                Your medicine routine, designed for real life
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.8, maxWidth: 560, mx: 'auto' }}>
-                MedAlarm is a free, open-source application designed to help patients, caregivers,
-                and healthcare professionals manage medications reliably and with confidence.
+              <Typography variant="body1" sx={{ opacity: 0.84, maxWidth: 620, mx: 'auto' }}>
+                MedAlarm helps people stay on track with medication schedules through reliable reminders,
+                quick dose actions, adherence history, and caregiver visibility.
               </Typography>
             </CardContent>
           </Card>
 
-          {/* Mission */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <FavoriteIcon color="error" />
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Our Mission
+                  Mission
                 </Typography>
               </Box>
               <Divider sx={{ mb: 2 }} />
               <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
-                Medication non-adherence is a serious global health problem — it contributes to
-                over 125,000 preventable deaths and costs the healthcare system hundreds of
-                billions of dollars annually. MedAlarm was built to help people take the right
-                medication at the right time, every day.
+                MedAlarm exists to make medication adherence feel less like admin work and more like
+                a calm daily rhythm. The goal is simple: help people remember what to take, when to
+                take it, and how well they are sticking to the plan over time.
               </Typography>
             </CardContent>
           </Card>
 
-          {/* Features */}
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-            Key Features
+            Feature highlights
           </Typography>
           <Grid container spacing={2} sx={{ mb: 4 }}>
-            {FEATURES.map((f, i) => (
-              <Grid item xs={12} sm={6} md={4} key={i}>
+            {FEATURES.map((feature) => (
+              <Grid item xs={12} sm={6} md={4} key={feature.title}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent>
-                    <Box sx={{ mb: 1 }}>{f.icon}</Box>
+                    <Box sx={{ mb: 1 }}>{feature.icon}</Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      {f.title}
+                      {feature.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {f.desc}
+                      {feature.desc}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -129,23 +134,22 @@ function AboutPage() {
             ))}
           </Grid>
 
-          {/* Tech Stack */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <CodeIcon color="primary" />
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Built With
+                  Built with
                 </Typography>
               </Box>
               <Divider sx={{ mb: 2 }} />
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {TECH_STACK.map((t) => (
+                {TECH_STACK.map((item) => (
                   <Chip
-                    key={t.label}
-                    label={t.label}
-                    color={t.color}
-                    variant={t.color === 'default' ? 'outlined' : 'filled'}
+                    key={item.label}
+                    label={item.label}
+                    color={item.color}
+                    variant={item.color === 'default' ? 'outlined' : 'filled'}
                     size="small"
                   />
                 ))}
@@ -153,16 +157,14 @@ function AboutPage() {
             </CardContent>
           </Card>
 
-          {/* Open Source */}
-          <Card sx={{ mb: 3 }}>
+          <Card>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                Open Source
+                Open source
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                MedAlarm is fully open source and available on GitHub. We welcome contributions,
-                bug reports, and feature requests from the community.
+                MedAlarm is open source and available on GitHub for contributions, bug reports, and feature requests.
               </Typography>
               <Link
                 href="https://github.com/itok12/medalarm"
@@ -170,23 +172,13 @@ function AboutPage() {
                 rel="noopener noreferrer"
                 sx={{ fontWeight: 600 }}
               >
-                github.com/itok12/medalarm →
+                github.com/itok12/medalarm
               </Link>
             </CardContent>
           </Card>
-
-          {/* Version */}
-          <Box sx={{ textAlign: 'center', py: 3, color: 'text.secondary' }}>
-            <Typography variant="body2">
-              MedAlarm v2.0 · MIT License
-            </Typography>
-            <Typography variant="caption">
-              Made with ❤️ for patients, caregivers, and healthcare teams worldwide.
-            </Typography>
-          </Box>
         </Box>
       </Fade>
-    </Box>
+    </AppScreen>
   );
 }
 

@@ -5,16 +5,19 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeContextProvider, useThemeMode } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { MedDataProvider } from './context/MedDataContext';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
-import Dashboard from './pages/Dashboard/Dashboard';
+import TodayPage from './pages/TodayPage';
+import MedicinesPage from './pages/MedicinesPage';
+import HistoryPage from './pages/HistoryPage';
 import ProfilePage from './pages/ProfilePage';
 import CaregiverPage from './pages/CaregiverPage';
 import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
-import PwaInstallPrompt from './components/Common/PwaInstallPrompt';
+import AppShell from './components/Layout/AppShell';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -31,58 +34,22 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <MedDataProvider>
+              <AppShell />
+            </MedDataProvider>
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/caregiver"
-        element={
-          <ProtectedRoute>
-            <CaregiverPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/help"
-        element={
-          <ProtectedRoute>
-            <HelpPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/about"
-        element={
-          <ProtectedRoute>
-            <AboutPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contact"
-        element={
-          <ProtectedRoute>
-            <ContactPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<TodayPage />} />
+        <Route path="medicines" element={<MedicinesPage />} />
+        <Route path="history" element={<HistoryPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="caregiver" element={<CaregiverPage />} />
+        <Route path="help" element={<HelpPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="about" element={<AboutPage />} />
+        <Route path="contact" element={<ContactPage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -111,7 +78,7 @@ function ThemedApp() {
           },
         },
         typography: {
-          fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+          fontFamily: '"Manrope", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
           h5: { fontWeight: 800 },
           h6: { fontWeight: 700 },
         },
@@ -162,7 +129,6 @@ function ThemedApp() {
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
-      <PwaInstallPrompt />
     </ThemeProvider>
   );
 }

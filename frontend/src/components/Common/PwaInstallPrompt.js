@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Snackbar, Alert } from '@mui/material';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
+import { isNativeMobilePlatform } from '../../services/nativePlatform';
 
 /**
  * Shows a "Install App" banner when the browser's beforeinstallprompt event fires.
@@ -11,6 +12,9 @@ function PwaInstallPrompt() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (isNativeMobilePlatform()) {
+      return undefined;
+    }
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -31,6 +35,10 @@ function PwaInstallPrompt() {
   const handleClose = () => {
     setOpen(false);
   };
+
+  if (isNativeMobilePlatform()) {
+    return null;
+  }
 
   return (
     <Snackbar

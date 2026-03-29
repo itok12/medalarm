@@ -6,7 +6,7 @@ import {
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import EmailIcon from '@mui/icons-material/Email';
-import Navbar from '../components/Layout/Navbar';
+import AppScreen from '../components/Layout/AppScreen';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
 
@@ -56,19 +56,13 @@ function ProfilePage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Navbar />
+    <AppScreen
+      title="Profile"
+      subtitle="Manage your account information and security settings."
+      maxWidth={700}
+    >
       <Fade in timeout={400}>
-        <Box sx={{ maxWidth: 600, mx: 'auto', p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
-              Profile
-            </Typography>
-            <Typography color="text.secondary" variant="body2">
-              Manage your account information and security settings.
-            </Typography>
-          </Box>
-
+        <Box>
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56, fontSize: 22 }}>
@@ -175,7 +169,7 @@ function ProfilePage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </AppScreen>
   );
 }
 
