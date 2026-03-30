@@ -11,9 +11,18 @@ frontend/android/*details*.txt
 frontend/ios/App/build/
 frontend/ios/DerivedData/
 artifacts/
+run-logs/
 
 # Backend build artifacts
 backend/target/
+
+# Local env and secrets
+.env
+.env.local
+.env.review.local
+frontend/.env.local
+frontend/.env.production.local
+backend/.env.local
 
 # IDE files
 .idea/

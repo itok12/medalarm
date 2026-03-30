@@ -1,9 +1,11 @@
 package com.example.medapp.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 
 public class LoginRequest {
     @NotBlank
+    @JsonAlias({"usernameOrEmail", "email"})
     private String username;
 
     @NotBlank

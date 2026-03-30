@@ -1,7 +1,43 @@
 import axios from 'axios';
 
+function getRuntimeConfigBaseUrl() {
+  if (typeof window === 'undefined') return '';
+  return window.__MEDALARM_RUNTIME_CONFIG__?.API_BASE_URL?.trim() || '';
+}
+
+function inferApiBaseUrl() {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8080/api';
+  }
+
+  const { origin, hostname } = window.location;
+  const isNativePlatform = !!window.Capacitor?.isNativePlatform?.();
+  const isLocalHost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0';
+
+  if (isNativePlatform) {
+    return 'https://api.medalarm.app/api';
+  }
+
+  if (isLocalHost) {
+    return 'http://localhost:8080/api';
+  }
+
+  if (hostname === 'medalarm.app' || hostname.endsWith('.medalarm.app')) {
+    return 'https://api.medalarm.app/api';
+  }
+
+  if (hostname === 'medalarm-frontend.onrender.com') {
+    return 'https://medalarm-backend.onrender.com/api';
+  }
+
+  return `${origin}/api`;
+}
+
 const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+  process.env.REACT_APP_API_BASE_URL || getRuntimeConfigBaseUrl() || inferApiBaseUrl();
 
 const STORAGE_KEYS = {
   token: 'token',

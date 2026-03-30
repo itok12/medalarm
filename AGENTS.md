@@ -39,7 +39,7 @@ Help code, finish, test, deploy, and publish MedAlarm with as little thrash as p
 
 ## Verification Commands
 
-- Backend tests: `cd backend && ./mvnw test`
+- Backend tests: `cd backend && mvn test`
 - Frontend tests: `cd frontend && npm test -- --watchAll=false`
 - Frontend production build: `cd frontend && npm run build`
 - Full stack local run: `docker-compose up --build`

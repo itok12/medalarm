@@ -45,6 +45,9 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      enabled: ${MAIL_ENABLED:false}
 
 app:
   ml-service:
@@ -60,3 +63,10 @@ jwt:
 medalarm:
   email:
     enabled: ${MAIL_ENABLED:false}
+  demo-seed:
+    enabled: ${DEMO_SEED_ENABLED:true}
+  review-account:
+    username: ${MEDALARM_REVIEW_USERNAME:}
+    email: ${MEDALARM_REVIEW_EMAIL:}
+    password: ${MEDALARM_REVIEW_PASSWORD:}
+    timezone: ${MEDALARM_REVIEW_TIMEZONE:UTC}

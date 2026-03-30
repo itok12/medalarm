@@ -13,7 +13,7 @@ For each PR:
 ```bash
 git fetch
 git checkout <pr-branch-name>
-cd backend && ./mvnw spring-boot:run   # backend on :8080
+cd backend && mvn spring-boot:run      # backend on :8080
 cd frontend && npm install && npm start # frontend on :3000
 ```
 
@@ -124,7 +124,7 @@ Once everything above is stable, consider these additions:
 
 ```bash
 # Run backend tests only
-cd backend && ./mvnw test
+cd backend && mvn test
 
 # Build production frontend
 cd frontend && npm run build

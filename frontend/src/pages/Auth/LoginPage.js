@@ -148,7 +148,7 @@ function LoginPage() {
             <Box component="form" onSubmit={handleSubmit} noValidate>
               <TextField
                 fullWidth
-                label="Username"
+                label="Username or email"
                 name="username"
                 margin="normal"
                 value={form.username}
@@ -156,7 +156,7 @@ function LoginPage() {
                 error={!!errors.username}
                 helperText={errors.username}
                 autoFocus
-                autoComplete="username"
+                autoComplete="username email"
               />
               <TextField
                 fullWidth
