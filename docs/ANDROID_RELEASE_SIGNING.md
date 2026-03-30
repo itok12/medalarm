@@ -30,10 +30,24 @@ $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
 
 ## 5. Build the Release
 
+Google Play requires an Android App Bundle for new apps. Build the signed bundle first, and only build an APK if you also want a side-loadable artifact for QA.
+
+```powershell
+cd frontend/android
+.\gradlew.bat bundleRelease
+```
+
+Optional signed APK for direct install testing:
+
 ```powershell
 cd frontend/android
 .\gradlew.bat assembleRelease
 ```
+
+Expected outputs:
+
+- AAB: `frontend/android/app/build/outputs/bundle/release/app-release.aab`
+- APK: `frontend/android/app/build/outputs/apk/release/app-release.apk`
 
 If the Android SDK is not configured, create `frontend/android/local.properties` with:
 

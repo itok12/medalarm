@@ -13,10 +13,12 @@
 1. Confirm Flyway migrations run cleanly on staging startup.
 2. Run the smoke checks in [STAGING_SMOKE_TESTS.md](./STAGING_SMOKE_TESTS.md).
 3. Confirm browser notifications, CSV export, and caregiver read-only access work end to end.
-4. Verify CORS settings include the production frontend origin.
-5. Rotate `JWT_SECRET` and confirm the production value is not the development default.
-6. Enable mail only after SMTP credentials, sender identity, and timezone behavior are verified.
-7. Promote the same image revisions that passed staging.
+4. Verify backend CORS allows `https://medalarm.app` and frontend API traffic targets `https://api.medalarm.app/api`.
+5. Verify the deployed frontend serves `https://medalarm.app/privacy-policy.html` and `https://medalarm.app/support.html`.
+6. Confirm `api.medalarm.app` resolves to the production backend service and `/actuator/health` is healthy before switching traffic.
+7. Rotate `JWT_SECRET` and confirm the production value is not the development default.
+8. Enable mail only after SMTP credentials, sender identity, and timezone behavior are verified.
+9. Promote the same image revisions that passed staging.
 
 ## Post Deploy
 

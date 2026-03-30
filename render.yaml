@@ -23,7 +23,7 @@ services:
     healthCheckPath: /
     envVars:
       - key: REACT_APP_API_BASE_URL
-        value: https://medalarm-backend.onrender.com/api
+        value: https://api.medalarm.app/api
 
 databases:
   - name: medalarm-db

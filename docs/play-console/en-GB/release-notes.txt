@@ -1,0 +1,3 @@
+First Android release of MedAlarm.
+
+Includes native medicine reminders, adherence logging, caregiver read-only history, onboarding, and a mobile-first Today screen.

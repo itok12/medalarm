@@ -1,0 +1,12 @@
+MedAlarm is a medicine reminder app built for real routines.
+
+Set up medicines, generate alarms from your schedule, and log doses as taken, skipped, or snoozed in seconds.
+
+MedAlarm helps you:
+- manage medicines with start and end dates
+- generate reminders from your routine
+- review adherence history over time
+- use a focused Today screen with quick actions
+- share read-only adherence visibility with linked caregivers
+
+The Android app uses native local notifications for reliable reminders, while the web app stays installable as a PWA.

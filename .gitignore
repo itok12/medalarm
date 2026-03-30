@@ -7,8 +7,10 @@ frontend/android/*.jks
 frontend/android/*.keystore
 frontend/android/keystore.properties
 frontend/android/local.properties
+frontend/android/*details*.txt
 frontend/ios/App/build/
 frontend/ios/DerivedData/
+artifacts/
 
 # Backend build artifacts
 backend/target/
