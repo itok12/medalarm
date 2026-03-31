@@ -2,6 +2,7 @@
 
 ![CI](https://github.com/itok12/medalarm/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/itok12/medalarm)
 
 MedAlarm is a full-stack medicine reminder app built with Spring Boot and React. It helps users manage medicines, generate alarm schedules, log adherence, and optionally share read-only adherence history with caregivers.
 
@@ -185,6 +186,23 @@ pwsh ./scripts/smoke-test.ps1
 ```
 
 ## Deployment and Operations
+
+### Quick Deploy on Render
+
+For the easiest first deploy, use Render's default `onrender.com` domains first and add your custom domain later.
+
+1. Click the "Deploy to Render" button above.
+2. Authorize Render to access the repository if prompted.
+3. Review the three resources Render will create:
+   - `medalarm-backend`
+   - `medalarm-frontend`
+   - `medalarm-db`
+4. Set any secret values Render asks for, then click `Apply`.
+5. After the deploy finishes, open:
+   - frontend: `https://medalarm-frontend.onrender.com`
+   - backend health check: `https://medalarm-backend.onrender.com/actuator/health`
+
+The frontend is configured to talk to the backend over Render's default domains, so you do not need to buy or connect a custom domain before the app works.
 
 - [Deployment checklist](./docs/DEPLOYMENT_CHECKLIST.md)
 - [Staging smoke tests](./docs/STAGING_SMOKE_TESTS.md)

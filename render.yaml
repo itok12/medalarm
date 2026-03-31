@@ -2,11 +2,10 @@ services:
   - type: web
     name: medalarm-backend
     runtime: docker
+    plan: free
     dockerfilePath: ./backend/Dockerfile
     autoDeployTrigger: checksPass
     healthCheckPath: /actuator/health
-    domains:
-      - api.medalarm.app
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -32,14 +31,13 @@ services:
   - type: web
     name: medalarm-frontend
     runtime: docker
+    plan: free
     dockerfilePath: ./frontend/Dockerfile
     autoDeployTrigger: checksPass
     healthCheckPath: /
-    domains:
-      - medalarm.app
     envVars:
       - key: REACT_APP_API_BASE_URL
-        value: https://api.medalarm.app/api
+        value: https://medalarm-backend.onrender.com/api
 
 databases:
   - name: medalarm-db
