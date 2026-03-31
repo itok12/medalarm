@@ -8,6 +8,22 @@
 4. Keep `MAIL_ENABLED=false` in staging unless SMTP credentials are configured for test delivery.
 5. Verify the backend health endpoint at `/actuator/health` before exposing the staging frontend.
 
+## Render Blueprint Sync
+
+1. In Render, open the Blueprint-backed MedAlarm project and sync it to the latest `main` commit.
+2. Confirm the backend service receives `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD` from the managed `medalarm-db` database.
+3. Confirm the backend service includes `CORS_ALLOWED_ORIGINS=https://medalarm.app,https://www.medalarm.app,https://medalarm-frontend.onrender.com`.
+4. Confirm the frontend service includes `REACT_APP_API_BASE_URL=https://api.medalarm.app/api`.
+5. If Render shows pending custom-domain changes, apply them before switching DNS.
+
+## Namecheap DNS
+
+1. Remove any parking, redirect, or `AAAA` records for `medalarm.app`.
+2. Point the root domain `@` to Render with an `A` record of `216.24.57.1`.
+3. Point `www` to the Render frontend subdomain with a `CNAME` record.
+4. Add `api` as a `CNAME` record pointing to the Render backend subdomain.
+5. Wait for propagation, then verify `https://medalarm.app/`, `https://medalarm.app/delete-account.html`, and `https://api.medalarm.app/actuator/health`.
+
 ## Production Gate
 
 1. Confirm Flyway migrations run cleanly on staging startup.

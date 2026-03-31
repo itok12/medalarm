@@ -3,7 +3,10 @@ services:
     name: medalarm-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
+    autoDeployTrigger: checksPass
     healthCheckPath: /actuator/health
+    domains:
+      - api.medalarm.app
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -11,16 +14,29 @@ services:
         fromDatabase:
           name: medalarm-db
           property: connectionString
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: medalarm-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: medalarm-db
+          property: password
       - key: JWT_SECRET
         generateValue: true
       - key: MAIL_ENABLED
         value: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://medalarm.app,https://www.medalarm.app,https://medalarm-frontend.onrender.com
 
   - type: web
     name: medalarm-frontend
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
+    autoDeployTrigger: checksPass
     healthCheckPath: /
+    domains:
+      - medalarm.app
     envVars:
       - key: REACT_APP_API_BASE_URL
         value: https://api.medalarm.app/api
