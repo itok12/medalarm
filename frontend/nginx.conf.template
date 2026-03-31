@@ -1,5 +1,6 @@
 server {
-    listen 80;
+    listen ${NGINX_PORT};
+
     location = /runtime-config.js {
         root /usr/share/nginx/html;
         add_header Cache-Control "no-store, no-cache, must-revalidate";

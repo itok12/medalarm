@@ -3,7 +3,9 @@ services:
     name: medalarm-backend
     runtime: docker
     plan: free
-    dockerfilePath: ./backend/Dockerfile
+    rootDir: backend
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     autoDeployTrigger: checksPass
     healthCheckPath: /actuator/health
     envVars:
@@ -32,7 +34,9 @@ services:
     name: medalarm-frontend
     runtime: docker
     plan: free
-    dockerfilePath: ./frontend/Dockerfile
+    rootDir: frontend
+    dockerfilePath: frontend/Dockerfile
+    dockerContext: frontend
     autoDeployTrigger: checksPass
     healthCheckPath: /
     envVars:
