@@ -3,7 +3,6 @@ services:
     name: medalarm-backend
     runtime: docker
     plan: free
-    rootDir: backend
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
     autoDeployTrigger: checksPass
@@ -34,7 +33,6 @@ services:
     name: medalarm-frontend
     runtime: docker
     plan: free
-    rootDir: frontend
     dockerfilePath: frontend/Dockerfile
     dockerContext: frontend
     autoDeployTrigger: checksPass
