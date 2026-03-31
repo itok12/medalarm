@@ -2,6 +2,7 @@ const CACHE_NAME = 'medalarm-app-shell-v1';
 const APP_SHELL = [
   '/',
   '/index.html',
+  '/delete-account.html',
   '/manifest.json',
   '/icon.svg',
   '/icon-maskable.svg',

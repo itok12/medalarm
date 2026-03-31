@@ -11,20 +11,30 @@ import {
   Typography,
 } from '@mui/material';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { trackEvent } from '../../services/telemetry';
 import { extractErrorMessage } from '../../utils/errorUtils';
 
+function resolveNextPath(search) {
+  const next = new URLSearchParams(search).get('next');
+  if (!next || !next.startsWith('/') || next.startsWith('//')) {
+    return '/';
+  }
+  return next;
+}
+
 function RegisterPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+  const nextPath = resolveNextPath(location.search);
 
   const validate = () => {
     const nextErrors = {};
@@ -59,7 +69,7 @@ function RegisterPage() {
       });
       login(response.data);
       trackEvent('register_success');
-      navigate('/');
+      navigate(nextPath, { replace: true });
     } catch (error) {
       setServerError(
         extractErrorMessage(error, 'Registration failed. Please try again.')
@@ -204,7 +214,11 @@ function RegisterPage() {
 
             <Typography sx={{ mt: 2.5, textAlign: 'center' }} variant="body2">
               Already have an account?{' '}
-              <Link component={RouterLink} to="/login" sx={{ fontWeight: 700 }}>
+              <Link
+                component={RouterLink}
+                to={nextPath === '/' ? '/login' : `/login?next=${encodeURIComponent(nextPath)}`}
+                sx={{ fontWeight: 700 }}
+              >
                 Sign in
               </Link>
             </Typography>

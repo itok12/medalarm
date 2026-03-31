@@ -20,6 +20,7 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
 import SupportPage from './pages/SupportPage';
+import DeleteAccountPage from './pages/DeleteAccountPage';
 import AppShell from './components/Layout/AppShell';
 import RouteTelemetry from './components/Common/RouteTelemetry';
 
@@ -34,6 +35,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/delete-account" element={<DeleteAccountPage />} />
       <Route
         path="/"
         element={

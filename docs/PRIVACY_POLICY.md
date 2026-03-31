@@ -20,4 +20,14 @@ MedAlarm stores the account information, medicine schedules, reminder preference
 
 ## Questions
 
+## Account deletion
+
+Users can request permanent account deletion from the secure in-app deletion flow or from the public web resource at `/delete-account.html` on the deployed frontend domain.
+
+Deleting an account removes:
+
+- The MedAlarm user profile
+- Medicines, alarms, and adherence logs linked to that account
+- Caregiver relationships linked to that account
+
 Use the support and contact routes in the app or the repository links for help.

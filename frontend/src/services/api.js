@@ -189,6 +189,7 @@ export const logAPI = {
 export const userAPI = {
   getMe: () => api.get('/users/me'),
   updateMe: (data) => api.put('/users/me', data),
+  deleteMe: (data) => api.delete('/users/me', { data }),
 };
 
 export const caregiverAPI = {

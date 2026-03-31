@@ -11,20 +11,31 @@ import {
   Typography,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { trackEvent } from '../../services/telemetry';
 import { extractErrorMessage } from '../../utils/errorUtils';
 
+function resolveNextPath(search) {
+  const next = new URLSearchParams(search).get('next');
+  if (!next || !next.startsWith('/') || next.startsWith('//')) {
+    return '/';
+  }
+  return next;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [form, setForm] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+  const deleted = new URLSearchParams(location.search).get('deleted') === '1';
+  const nextPath = resolveNextPath(location.search);
 
   const validate = () => {
     const nextErrors = {};
@@ -53,7 +64,7 @@ function LoginPage() {
       const response = await authAPI.login(form);
       login(response.data);
       trackEvent('login_success');
-      navigate('/');
+      navigate(nextPath, { replace: true });
     } catch (error) {
       setServerError(
         extractErrorMessage(error, 'Login failed. Please check your credentials.')
@@ -139,6 +150,11 @@ function LoginPage() {
               </Box>
             </Box>
 
+            {deleted && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Your account deletion request has been completed.
+              </Alert>
+            )}
             {serverError && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {serverError}
@@ -185,7 +201,11 @@ function LoginPage() {
 
             <Typography sx={{ mt: 2.5, textAlign: 'center' }} variant="body2">
               Don&apos;t have an account?{' '}
-              <Link component={RouterLink} to="/register" sx={{ fontWeight: 700 }}>
+              <Link
+                component={RouterLink}
+                to={nextPath === '/' ? '/register' : `/register?next=${encodeURIComponent(nextPath)}`}
+                sx={{ fontWeight: 700 }}
+              >
                 Create one
               </Link>
             </Typography>

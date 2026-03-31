@@ -40,6 +40,7 @@ Use this worksheet to answer the Google Play `Data safety` form consistently wit
 - Passwords are stored as hashes on the backend
 - JWT auth protects API access
 - Caregiver access is read-only and explicitly linked
+- Account deletion is available from the secure in-app flow and from the deployed `/delete-account.html` page
 
 ## Optional Telemetry
 

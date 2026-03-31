@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Collection;
 
 public interface MedicationLogRepository extends JpaRepository<MedicationLog, Long> {
     @Query("""
@@ -17,4 +18,6 @@ public interface MedicationLogRepository extends JpaRepository<MedicationLog, Lo
             order by l.takenAt desc
             """)
     List<MedicationLog> findDetailedForUser(@Param("userId") Long userId);
+
+    List<MedicationLog> findByAlarm_IdIn(Collection<Long> alarmIds);
 }

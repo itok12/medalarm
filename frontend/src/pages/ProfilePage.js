@@ -6,11 +6,14 @@ import {
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import EmailIcon from '@mui/icons-material/Email';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { useNavigate } from 'react-router-dom';
 import AppScreen from '../components/Layout/AppScreen';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
 
 function ProfilePage() {
+  const navigate = useNavigate();
   const { user, updateUserFromProfile } = useAuth();
   const [currentPasswordForPw, setCurrentPasswordForPw] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -124,7 +127,7 @@ function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <EmailIcon color="primary" fontSize="small" />
@@ -154,6 +157,27 @@ function ProfilePage() {
                   Update Email
                 </Button>
               </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ borderColor: 'error.light' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <DeleteOutlineIcon color="error" fontSize="small" />
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Delete Account</Typography>
+              </Box>
+              <Divider sx={{ mb: 2.5 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Permanently delete your MedAlarm account, medicines, alarms, adherence logs, and caregiver links.
+                This action cannot be undone.
+              </Typography>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => navigate('/delete-account')}
+              >
+                Open account deletion
+              </Button>
             </CardContent>
           </Card>
         </Box>

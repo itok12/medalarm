@@ -7,6 +7,7 @@ Updated March 29, 2026
 - GitHub Issues for bugs
 - GitHub Discussions for feature requests and usage questions
 - The in-app Contact page for direct product feedback
+- The deployed `/delete-account.html` page for account deletion requests
 
 ## Include These Details
 

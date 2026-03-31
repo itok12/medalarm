@@ -55,6 +55,7 @@ MedAlarm is a full-stack medicine reminder app built with Spring Boot and React.
 | `/help` | FAQ and quick usage help |
 | `/about` | Product overview |
 | `/contact` | Feedback form |
+| `/delete-account` | Secure account deletion flow |
 
 ## API Summary
 
@@ -73,6 +74,7 @@ MedAlarm is a full-stack medicine reminder app built with Spring Boot and React.
 | --- | --- |
 | `GET` | `/api/users/me` |
 | `PUT` | `/api/users/me` |
+| `DELETE` | `/api/users/me` |
 | `GET` | `/api/medicines` |
 | `POST` | `/api/medicines` |
 | `PUT` | `/api/medicines/{id}` |

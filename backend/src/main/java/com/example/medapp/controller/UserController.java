@@ -1,10 +1,13 @@
 package com.example.medapp.controller;
 
+import com.example.medapp.dto.DeleteAccountRequest;
 import com.example.medapp.dto.UpdateProfileRequest;
 import com.example.medapp.dto.UserProfileResponse;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.UserRepository;
+import com.example.medapp.service.AccountDeletionService;
 import com.example.medapp.service.CurrentUserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -19,11 +22,18 @@ public class UserController {
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
     private final PasswordEncoder passwordEncoder;
+    private final AccountDeletionService accountDeletionService;
 
-    public UserController(UserRepository userRepository, CurrentUserService currentUserService, PasswordEncoder passwordEncoder) {
+    public UserController(
+            UserRepository userRepository,
+            CurrentUserService currentUserService,
+            PasswordEncoder passwordEncoder,
+            AccountDeletionService accountDeletionService
+    ) {
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
         this.passwordEncoder = passwordEncoder;
+        this.accountDeletionService = accountDeletionService;
     }
 
     @GetMapping("/me")
@@ -78,6 +88,18 @@ public class UserController {
 
         User saved = userRepository.save(user);
         return ResponseEntity.ok(new UserProfileResponse(saved));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteCurrentUser(@Valid @RequestBody DeleteAccountRequest req) {
+        User user = currentUserService.getCurrentUser();
+
+        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Current password is incorrect"));
+        }
+
+        accountDeletionService.deleteAccount(user);
+        return ResponseEntity.ok(Map.of("message", "Account deleted"));
     }
 }
 

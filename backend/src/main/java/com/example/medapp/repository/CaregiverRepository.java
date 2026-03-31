@@ -9,6 +9,7 @@ import java.util.Optional;
 public interface CaregiverRepository extends JpaRepository<CaregiverRelation, Long> {
 
     List<CaregiverRelation> findByCaregiver_IdOrderByPatient_UsernameAsc(Long caregiverId);
+    List<CaregiverRelation> findByCaregiver_IdOrPatient_Id(Long caregiverId, Long patientId);
 
     boolean existsByCaregiverIdAndPatientId(Long caregiverId, Long patientId);
 
