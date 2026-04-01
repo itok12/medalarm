@@ -10,7 +10,7 @@ function inferApiBaseUrl() {
     return 'http://localhost:8080/api';
   }
 
-  const { origin, hostname } = window.location;
+  const { hostname } = window.location;
   const isNativePlatform = !!window.Capacitor?.isNativePlatform?.();
   const isLocalHost =
     hostname === 'localhost' ||
@@ -29,11 +29,7 @@ function inferApiBaseUrl() {
     return 'https://api.medalarm.app/api';
   }
 
-  if (hostname === 'medalarm-frontend.onrender.com') {
-    return 'https://medalarm-backend.onrender.com/api';
-  }
-
-  return `${origin}/api`;
+  return '/api';
 }
 
 const API_BASE_URL =

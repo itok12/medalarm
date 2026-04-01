@@ -34,9 +34,10 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:80"
+      - "3000:10000"
     environment:
-      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-http://localhost:8080/api}
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-/api}
+      BACKEND_HOSTPORT: ${BACKEND_HOSTPORT:-backend:8080}
     depends_on:
       - backend
 

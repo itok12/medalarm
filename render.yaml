@@ -39,7 +39,12 @@ services:
     healthCheckPath: /
     envVars:
       - key: REACT_APP_API_BASE_URL
-        value: https://medalarm-backend.onrender.com/api
+        value: /api
+      - key: BACKEND_HOSTPORT
+        fromService:
+          type: web
+          name: medalarm-backend
+          property: hostport
 
 databases:
   - name: medalarm-db
