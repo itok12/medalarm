@@ -8,18 +8,6 @@ function isKnownCustomWebDomain(hostname) {
   );
 }
 
-function getCustomApiOrigin(hostname) {
-  if (hostname === 'medalarmapp.com' || hostname.endsWith('.medalarmapp.com')) {
-    return 'https://api.medalarmapp.com/api';
-  }
-
-  if (hostname === 'medalarm.app' || hostname.endsWith('.medalarm.app')) {
-    return 'https://api.medalarm.app/api';
-  }
-
-  return '';
-}
-
 function getRuntimeConfigBaseUrl() {
   if (typeof window === 'undefined') return '';
   return window.__MEDALARM_RUNTIME_CONFIG__?.API_BASE_URL?.trim() || '';
@@ -57,9 +45,8 @@ function inferApiBaseUrl() {
     return 'http://localhost:8080/api';
   }
 
-  const customApiOrigin = getCustomApiOrigin(hostname);
-  if (customApiOrigin) {
-    return customApiOrigin;
+  if (isKnownCustomWebDomain(hostname)) {
+    return '/api';
   }
 
   return '/api';
