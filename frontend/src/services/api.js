@@ -5,6 +5,18 @@ function getRuntimeConfigBaseUrl() {
   return window.__MEDALARM_RUNTIME_CONFIG__?.API_BASE_URL?.trim() || '';
 }
 
+function normalizeApiBaseUrl(value) {
+  const trimmedValue = value?.trim();
+  if (!trimmedValue) return '';
+
+  const withoutTrailingSlash = trimmedValue.replace(/\/+$/, '');
+  if (withoutTrailingSlash === '/api' || withoutTrailingSlash.endsWith('/api')) {
+    return withoutTrailingSlash;
+  }
+
+  return `${withoutTrailingSlash}/api`;
+}
+
 function inferApiBaseUrl() {
   if (typeof window === 'undefined') {
     return 'http://localhost:8080/api';
@@ -32,8 +44,9 @@ function inferApiBaseUrl() {
   return '/api';
 }
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || getRuntimeConfigBaseUrl() || inferApiBaseUrl();
+const API_BASE_URL = normalizeApiBaseUrl(
+  getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferApiBaseUrl()
+);
 
 const STORAGE_KEYS = {
   token: 'token',
