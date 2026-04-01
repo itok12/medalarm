@@ -1,18 +1,38 @@
 #!/bin/sh
 set -eu
 
-if [ -n "${DATABASE_URL:-}" ] && [ -z "${JDBC_DATABASE_URL:-}" ]; then
-  case "$DATABASE_URL" in
+convert_render_database_url() {
+  raw_url="$1"
+
+  case "$raw_url" in
     jdbc:postgresql://*)
-      export JDBC_DATABASE_URL="$DATABASE_URL"
+      normalized_url="postgresql://${raw_url#jdbc:postgresql://}"
       ;;
     postgresql://*)
-      export JDBC_DATABASE_URL="jdbc:${DATABASE_URL}"
+      normalized_url="$raw_url"
       ;;
     postgres://*)
-      export JDBC_DATABASE_URL="jdbc:postgresql://${DATABASE_URL#postgres://}"
+      normalized_url="postgresql://${raw_url#postgres://}"
+      ;;
+    *)
+      return 1
       ;;
   esac
+
+  normalized_url="${normalized_url#postgresql://}"
+
+  if [ "${normalized_url#*@}" != "$normalized_url" ]; then
+    normalized_url="${normalized_url#*@}"
+  fi
+
+  printf 'jdbc:postgresql://%s' "$normalized_url"
+}
+
+if [ -n "${DATABASE_URL:-}" ] && [ -z "${JDBC_DATABASE_URL:-}" ]; then
+  JDBC_DATABASE_URL="$(convert_render_database_url "$DATABASE_URL" || true)"
+  if [ -n "${JDBC_DATABASE_URL:-}" ]; then
+    export JDBC_DATABASE_URL
+  fi
 fi
 
 exec java ${JAVA_OPTS:-} -jar /app/app.jar
