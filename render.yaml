@@ -27,7 +27,7 @@ services:
       - key: MAIL_ENABLED
         value: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://medalarm.app,https://www.medalarm.app,https://*.onrender.com
+        value: https://medalarm.app,https://www.medalarm.app,https://medalarmapp.com,https://www.medalarmapp.com,https://*.onrender.com
 
   - type: web
     name: medalarm-frontend

@@ -1,5 +1,25 @@
 import axios from 'axios';
 
+const CUSTOM_WEB_DOMAINS = ['medalarm.app', 'medalarmapp.com'];
+
+function isKnownCustomWebDomain(hostname) {
+  return CUSTOM_WEB_DOMAINS.some(
+    (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+  );
+}
+
+function getCustomApiOrigin(hostname) {
+  if (hostname === 'medalarmapp.com' || hostname.endsWith('.medalarmapp.com')) {
+    return 'https://api.medalarmapp.com/api';
+  }
+
+  if (hostname === 'medalarm.app' || hostname.endsWith('.medalarm.app')) {
+    return 'https://api.medalarm.app/api';
+  }
+
+  return '';
+}
+
 function getRuntimeConfigBaseUrl() {
   if (typeof window === 'undefined') return '';
   return window.__MEDALARM_RUNTIME_CONFIG__?.API_BASE_URL?.trim() || '';
@@ -37,8 +57,9 @@ function inferApiBaseUrl() {
     return 'http://localhost:8080/api';
   }
 
-  if (hostname === 'medalarm.app' || hostname.endsWith('.medalarm.app')) {
-    return 'https://api.medalarm.app/api';
+  const customApiOrigin = getCustomApiOrigin(hostname);
+  if (customApiOrigin) {
+    return customApiOrigin;
   }
 
   return '/api';
@@ -49,7 +70,7 @@ function resolveApiBaseUrl() {
 
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
-    if (hostname === 'medalarm.app' || hostname.endsWith('.medalarm.app')) {
+    if (isKnownCustomWebDomain(hostname)) {
       return normalizeApiBaseUrl(inferredBaseUrl);
     }
   }
