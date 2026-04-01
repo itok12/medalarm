@@ -44,9 +44,22 @@ function inferApiBaseUrl() {
   return '/api';
 }
 
-const API_BASE_URL = normalizeApiBaseUrl(
-  getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferApiBaseUrl()
-);
+function resolveApiBaseUrl() {
+  const inferredBaseUrl = inferApiBaseUrl();
+
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (hostname === 'medalarm.app' || hostname.endsWith('.medalarm.app')) {
+      return normalizeApiBaseUrl(inferredBaseUrl);
+    }
+  }
+
+  return normalizeApiBaseUrl(
+    getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferredBaseUrl
+  );
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const STORAGE_KEYS = {
   token: 'token',
@@ -89,7 +102,8 @@ function clearSessionFields() {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  // Render free instances can take tens of seconds to wake up after inactivity.
+  timeout: 65000,
   headers: { 'Content-Type': 'application/json' },
 });
 
