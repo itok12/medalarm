@@ -5,7 +5,7 @@ Use these as the draft answers in Play Console.
 ## Privacy policy
 
 - Required: `Yes`
-- URL: `https://medalarm.app/privacy-policy.html`
+- URL: `https://medalarmapp.com/privacy-policy.html`
 
 ## Ads
 

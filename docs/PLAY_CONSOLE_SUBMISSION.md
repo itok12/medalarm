@@ -46,10 +46,10 @@ This checklist turns the signed Android release into a Play Console-ready submis
 
 ## Required Links
 
-- Privacy policy: `https://medalarm.app/privacy-policy.html`
-- Support page: `https://medalarm.app/support.html`
-- Marketing site: `https://medalarm.app/`
-- Support email: `support@medalarm.app`
+- Privacy policy: `https://medalarmapp.com/privacy-policy.html`
+- Support page: `https://medalarmapp.com/support.html`
+- Marketing site: `https://medalarmapp.com/`
+- Support email: `support@medalarmapp.com`
 
 ## Screenshot Set
 

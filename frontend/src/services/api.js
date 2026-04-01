@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const CUSTOM_WEB_DOMAINS = ['medalarm.app', 'medalarmapp.com'];
+const CUSTOM_WEB_DOMAINS = ['medalarmapp.com'];
 
 function isKnownCustomWebDomain(hostname) {
   return CUSTOM_WEB_DOMAINS.some(
@@ -38,7 +38,7 @@ function inferApiBaseUrl() {
     hostname === '0.0.0.0';
 
   if (isNativePlatform) {
-    return 'https://api.medalarm.app/api';
+    return 'https://medalarmapp.com/api';
   }
 
   if (isLocalHost) {

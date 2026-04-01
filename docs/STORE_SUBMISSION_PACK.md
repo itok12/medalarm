@@ -2,10 +2,10 @@
 
 ## URLs
 
-- Privacy policy URL: `https://medalarm.app/privacy-policy.html`
-- Support URL: `https://medalarm.app/support.html`
-- Marketing URL: `https://medalarm.app/`
-- Support email: `support@medalarm.app`
+- Privacy policy URL: `https://medalarmapp.com/privacy-policy.html`
+- Support URL: `https://medalarmapp.com/support.html`
+- Marketing URL: `https://medalarmapp.com/`
+- Support email: `support@medalarmapp.com`
 
 ## Apple App Store Copy
 
@@ -49,7 +49,7 @@ Google Play metadata files now live in `docs/play-console/en-GB/`.
 
 ## Launch Checklist
 
-- Verify `https://medalarm.app/privacy-policy.html` and `https://medalarm.app/support.html` are live.
+- Verify `https://medalarmapp.com/privacy-policy.html` and `https://medalarmapp.com/support.html` are live.
 - Capture screenshots from a real device build, not the browser.
 - Replace placeholder icon assets if you update the brand.
 - Confirm notification permission text matches the store submission forms.
