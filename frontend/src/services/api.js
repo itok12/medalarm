@@ -1,13 +1,5 @@
 import axios from 'axios';
 
-const CUSTOM_WEB_DOMAINS = ['medalarmapp.com'];
-
-function isKnownCustomWebDomain(hostname) {
-  return CUSTOM_WEB_DOMAINS.some(
-    (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
-  );
-}
-
 function getRuntimeConfigBaseUrl() {
   if (typeof window === 'undefined') return '';
   return window.__MEDALARM_RUNTIME_CONFIG__?.API_BASE_URL?.trim() || '';
@@ -45,25 +37,12 @@ function inferApiBaseUrl() {
     return 'http://localhost:8080/api';
   }
 
-  if (isKnownCustomWebDomain(hostname)) {
-    return '/api';
-  }
-
   return '/api';
 }
 
 function resolveApiBaseUrl() {
-  const inferredBaseUrl = inferApiBaseUrl();
-
-  if (typeof window !== 'undefined') {
-    const { hostname } = window.location;
-    if (isKnownCustomWebDomain(hostname)) {
-      return normalizeApiBaseUrl(inferredBaseUrl);
-    }
-  }
-
   return normalizeApiBaseUrl(
-    getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferredBaseUrl
+    getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferApiBaseUrl()
   );
 }
 
