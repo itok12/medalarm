@@ -133,20 +133,34 @@ function TodayPage() {
               theme.palette.mode === 'dark'
                 ? 'linear-gradient(135deg, #0b1730 0%, #133b5c 60%, #0c6b58 100%)'
                 : 'linear-gradient(135deg, #dcefff 0%, #eef8ff 50%, #dff8ef 100%)',
+            overflow: 'hidden',
           }}
         >
           <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-            <Grid container spacing={2.5} alignItems="stretch">
+            <Grid container spacing={{ xs: 2, sm: 2.5 }} alignItems="stretch">
               <Grid item xs={12} md={7}>
                 <Typography variant="overline" sx={{ letterSpacing: '0.16em', color: 'text.secondary' }}>
                   Today Focus
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.04em', mb: 1 }}>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 900,
+                    letterSpacing: '-0.04em',
+                    mb: 1,
+                    fontSize: { xs: '2.1rem', sm: '3rem' },
+                    lineHeight: 1.08,
+                  }}
+                >
                   {nextAlarm
                     ? `${formatTime12h(nextAlarm.alarmTime)} is your next dose`
                     : 'You are clear for now'}
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2.5, maxWidth: 560 }}>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 2.5, maxWidth: { xs: '100%', sm: 560 }, fontSize: { xs: '0.98rem', sm: '1rem' } }}
+                >
                   {nextAlarm
                     ? `Keep momentum: ${medNameById.get(nextAlarm.medicineId) || 'your medicine'} is up next.`
                     : 'No upcoming reminders were found across your active schedules.'}
@@ -157,11 +171,24 @@ function TodayPage() {
                   <Chip icon={<CheckCircleOutlineIcon />} label={`${takenThisWeek} taken this week`} variant="outlined" />
                   {offline && <Chip icon={<SyncProblemIcon />} label="Offline mode" color="warning" variant="outlined" />}
                 </Stack>
-                <Stack direction="row" spacing={1.25} sx={{ mt: 2.5 }} flexWrap="wrap" useFlexGap>
-                  <Button variant="contained" onClick={() => navigate('/medicines')}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.25}
+                  sx={{ mt: 2.5, width: '100%' }}
+                  useFlexGap
+                >
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/medicines')}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  >
                     Manage medicines
                   </Button>
-                  <Button variant="outlined" onClick={() => navigate('/history')}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate('/history')}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  >
                     View history
                   </Button>
                 </Stack>

@@ -78,7 +78,7 @@ function LoginPage() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         bgcolor: 'background.default',
       }}
@@ -113,18 +113,19 @@ function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          p: { xs: 2, sm: 4 },
+          p: { xs: 1.5, sm: 4 },
         }}
       >
         <Fade in timeout={450}>
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 3, sm: 4 },
+              p: { xs: 2.25, sm: 4 },
               width: '100%',
-              maxWidth: 400,
+              maxWidth: { xs: '100%', sm: 400 },
               border: '1px solid',
               borderColor: 'divider',
+              borderRadius: { xs: 4, sm: 6 },
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
