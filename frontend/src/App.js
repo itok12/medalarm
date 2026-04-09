@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeContextProvider, useThemeMode } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
@@ -23,6 +24,7 @@ import SupportPage from './pages/SupportPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import AppShell from './components/Layout/AppShell';
 import RouteTelemetry from './components/Common/RouteTelemetry';
+import { isNativeMobilePlatform } from './services/nativePlatform';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -145,6 +147,14 @@ function ThemedApp() {
 }
 
 function App() {
+  useEffect(() => {
+    if (!isNativeMobilePlatform()) {
+      return;
+    }
+
+    SplashScreen.hide().catch(() => {});
+  }, []);
+
   return (
     <ThemeContextProvider>
       <AuthProvider>

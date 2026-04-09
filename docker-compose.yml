@@ -22,7 +22,7 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-medalarm}
       JWT_SECRET: ${JWT_SECRET:-medalarm-super-secret-key-change-in-production-at-least-32-chars}
       MAIL_ENABLED: ${MAIL_ENABLED:-false}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost,https://localhost,capacitor://localhost}
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
       MEDALARM_REVIEW_USERNAME: ${MEDALARM_REVIEW_USERNAME:-}
       MEDALARM_REVIEW_EMAIL: ${MEDALARM_REVIEW_EMAIL:-}
