@@ -53,7 +53,7 @@ app:
   ml-service:
     url: http://localhost:8000/extract-medicine-info
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost,https://localhost,capacitor://localhost}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost,https://localhost,capacitor://localhost,http://10.0.2.2}
 
 jwt:
   secret: medalarm-super-secret-key-change-in-production-at-least-32-chars

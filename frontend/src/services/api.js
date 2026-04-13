@@ -30,7 +30,7 @@ function inferApiBaseUrl() {
     hostname === '0.0.0.0';
 
   if (isNativePlatform) {
-    return 'https://medalarmapp.com/api';
+    return 'https://medalarm-backend-1jax.onrender.com/api';
   }
 
   if (isLocalHost) {
