@@ -1,0 +1,29 @@
+Subject: Please help test MedAlarm on Google Play
+
+Hi,
+
+I'm running a closed Google Play test for MedAlarm and need a small group of testers to join and keep the app installed during the test window.
+
+What I need from you:
+- open the Google Play test link I send you
+- join the MedAlarm closed test with the same Google account I invited
+- install the app
+- keep it installed for the full 14-day test period
+- open it a few times and try the main flows
+- keep notifications enabled
+
+What to test:
+- sign in or register
+- add a medicine
+- generate reminders
+- check whether notifications arrive at the right time
+- mark reminders as taken, skipped, or snoozed
+- review the history screen
+
+Please send me quick feedback if:
+- a reminder is late, missing, or duplicated
+- something is confusing
+- the app crashes
+- any screen or action feels unreliable
+
+Thank you. Your test participation directly helps me unlock production access in Google Play.

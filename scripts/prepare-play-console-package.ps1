@@ -60,10 +60,10 @@ Artifacts
   SHA256: $apkHash
 
 Live URLs
-- Privacy policy: https://medalarm.app/privacy-policy.html
-- Support: https://medalarm.app/support.html
-- Marketing: https://medalarm.app/
-- Support email: support@medalarm.app
+- Privacy policy: https://medalarmapp.com/privacy-policy.html
+- Support: https://medalarmapp.com/support.html
+- Marketing: https://medalarmapp.com/
+- Support email: support@medalarmapp.com
 "@
 
 Set-Content -Path (Join-Path $packageDir "MANIFEST.txt") -Value $manifest -NoNewline

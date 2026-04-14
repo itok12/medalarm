@@ -1,6 +1,6 @@
 # Play Data Safety Worksheet
 
-Use this worksheet to answer the Google Play `Data safety` form consistently with MedAlarm’s current implementation.
+Use this worksheet to answer the Google Play `Data safety` form consistently with MedAlarm's current implementation.
 
 ## Data Collected
 
@@ -41,6 +41,13 @@ Use this worksheet to answer the Google Play `Data safety` form consistently wit
 - JWT auth protects API access
 - Caregiver access is read-only and explicitly linked
 - Account deletion is available from the secure in-app flow and from the deployed `/delete-account.html` page
+
+## Policy Answers To Reuse
+
+- Advertising ID: `No`
+- Privacy policy URL: `https://medalarmapp.com/privacy-policy.html`
+- Account deletion URL: `https://medalarmapp.com/delete-account.html`
+- Support URL: `https://medalarmapp.com/support.html`
 
 ## Optional Telemetry
 

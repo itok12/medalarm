@@ -77,6 +77,9 @@ function PrivacyPage() {
           </Link>{' '}
           on your deployed frontend domain.
         </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Support email: <Link href="mailto:support@medalarmapp.com">support@medalarmapp.com</Link>
+        </Typography>
       </Box>
     </AppScreen>
   );

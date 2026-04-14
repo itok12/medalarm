@@ -81,6 +81,9 @@ function SupportPage() {
                 </React.Fragment>
               ))}
             </List>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Direct support email: <Link href="mailto:support@medalarmapp.com">support@medalarmapp.com</Link>
+            </Typography>
           </CardContent>
         </Card>
 
@@ -113,6 +116,9 @@ function SupportPage() {
                 /support.html
               </Link>{' '}
               on your deployed frontend domain.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Primary support website: <Link href="https://medalarmapp.com/support.html" target="_blank" rel="noopener noreferrer">medalarmapp.com/support.html</Link>
             </Typography>
           </CardContent>
         </Card>

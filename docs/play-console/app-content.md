@@ -10,12 +10,14 @@ Use these as the draft answers in Play Console.
 ## Ads
 
 - Contains ads: `No`
+- Uses Advertising ID: `No`
 
 ## App access
 
 - App access restrictions: `Account required`
 - Reviewer notes:
   `MedAlarm requires an account because medicine schedules, alarms, adherence logs, and caregiver links are tied to an authenticated user profile.`
+- Account deletion URL: `https://medalarmapp.com/delete-account.html`
 
 ## Target audience
 
