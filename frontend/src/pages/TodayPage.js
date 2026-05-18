@@ -35,7 +35,7 @@ import {
   syncNativeAlarmNotifications,
 } from '../services/reminderService';
 import { captureException, trackEvent } from '../services/telemetry';
-import { findNextAlarm, formatTime12h, getTodaysAlarms } from '../utils/alarmTimeline';
+import { computeAdherenceStreak, findNextAlarm, formatTime12h, getTodaysAlarms, takenInLast7Days } from '../utils/alarmTimeline';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -98,7 +98,8 @@ function TodayPage() {
 
   const todaysAlarms = useMemo(() => getTodaysAlarms(alarms), [alarms]);
   const nextAlarm = useMemo(() => findNextAlarm(alarms), [alarms]);
-  const takenThisWeek = logs.filter((log) => log.status === 'TAKEN').length;
+  const takenThisWeek = useMemo(() => takenInLast7Days(logs), [logs]);
+  const streak = useMemo(() => computeAdherenceStreak(logs), [logs]);
 
   useEffect(() => {
     getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
@@ -203,6 +204,9 @@ function TodayPage() {
                   <Chip icon={<MedicationIcon />} label={`${medicines.length} medicines`} color="primary" />
                   <Chip icon={<AccessTimeIcon />} label={`${todaysAlarms.length} doses today`} color="secondary" />
                   <Chip icon={<CheckCircleOutlineIcon />} label={`${takenThisWeek} taken this week`} variant="outlined" />
+                  {streak > 0 && (
+                    <Chip label={`🔥 ${streak}-day streak`} color="success" variant={streak >= 7 ? 'filled' : 'outlined'} />
+                  )}
                   {offline && <Chip icon={<SyncProblemIcon />} label="Offline mode" color="warning" variant="outlined" />}
                 </Stack>
                 <Stack

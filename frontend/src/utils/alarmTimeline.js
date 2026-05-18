@@ -73,6 +73,40 @@ export function findNextAlarm(alarms = [], now = new Date()) {
   return null;
 }
 
+export function computeAdherenceStreak(logs = [], now = new Date()) {
+  const takenDates = new Set(
+    logs
+      .filter((log) => log.status === 'TAKEN' && log.takenAt)
+      .map((log) => {
+        const d = new Date(log.takenAt);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      })
+  );
+
+  const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  const check = new Date(now);
+  check.setHours(0, 0, 0, 0);
+  if (!takenDates.has(todayKey)) {
+    check.setDate(check.getDate() - 1);
+  }
+
+  let streak = 0;
+  while (true) {
+    const key = `${check.getFullYear()}-${check.getMonth()}-${check.getDate()}`;
+    if (!takenDates.has(key)) break;
+    streak += 1;
+    check.setDate(check.getDate() - 1);
+  }
+  return streak;
+}
+
+export function takenInLast7Days(logs = [], now = new Date()) {
+  const cutoff = new Date(now);
+  cutoff.setDate(cutoff.getDate() - 7);
+  cutoff.setHours(0, 0, 0, 0);
+  return logs.filter((log) => log.status === 'TAKEN' && log.takenAt && new Date(log.takenAt) >= cutoff).length;
+}
+
 export function buildUpcomingAlarmInstances(alarms = [], daysAhead = 7, now = new Date()) {
   const instances = [];
 
