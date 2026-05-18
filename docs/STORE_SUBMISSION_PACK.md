@@ -19,9 +19,9 @@
 ## Google Play Copy
 
 - Short description:
-  `Stay on schedule with medicine reminders, dose logging, and adherence history.`
+  `Medicine reminders, dose logging, and adherence history for daily routines.`
 - Full description:
-  `MedAlarm is a medicine reminder app built for real routines. Set up medicines, generate alarms from your schedule, log doses as taken, skipped, or snoozed, and review adherence history over time. The mobile app uses native local notifications for reliable reminders, while the web app stays installable as a PWA.`
+  `MedAlarm is a medication reminder and adherence tracking app built for everyday routines. Set up medicines, generate reminders from your schedule, log doses as taken, skipped, or snoozed, and review adherence history over time. You can also share read-only adherence visibility with a linked caregiver. The mobile app uses native local notifications for reliable reminders, while the web app stays installable as a PWA. MedAlarm is not a medical device and does not provide diagnosis, treatment recommendations, or professional medical advice. Always follow the guidance of your doctor, pharmacist, or other qualified healthcare professional.`
 
 Google Play metadata files now live in `docs/play-console/en-GB/`.
 
@@ -31,6 +31,10 @@ Google Play metadata files now live in `docs/play-console/en-GB/`.
 - Caregiver access is read-only in this version.
 - Browser notifications are best-effort on the web; native reminders are used on iOS and Android.
 - Account creation is required because medicines, alarms, and adherence logs sync to the authenticated user.
+- Health declaration: `Medical` -> `Medication and treatment management`
+- Medical device status: `No`
+- Suggested reviewer note:
+  `MedAlarm is a consumer medication reminder and adherence tracking app. It is not a medical device and does not provide diagnosis or treatment recommendations.`
 
 ## Permission Explanations
 

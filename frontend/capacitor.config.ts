@@ -5,6 +5,9 @@ const config: CapacitorConfig = {
   appName: 'MedAlarm',
   webDir: 'build',
   bundledWebRuntime: false,
+  server: {
+    androidScheme: 'http',
+  },
   plugins: {
     SplashScreen: {
       launchAutoHide: false,
