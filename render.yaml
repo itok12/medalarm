@@ -40,6 +40,8 @@ services:
     envVars:
       - key: REACT_APP_API_BASE_URL
         value: /api
+      - key: BACKEND_API_ORIGIN
+        value: https://medalarm-backend-1jax.onrender.com
 
 databases:
   - name: medalarm-db

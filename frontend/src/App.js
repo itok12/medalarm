@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -27,7 +29,14 @@ import RouteTelemetry from './components/Common/RouteTelemetry';
 import { isNativeMobilePlatform } from './services/nativePlatform';
 
 function ProtectedRoute({ children }) {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
+  if (authLoading) {
+    return (
+      <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
+        <CircularProgress size={32} />
+      </Box>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }

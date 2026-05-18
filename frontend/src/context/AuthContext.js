@@ -4,21 +4,54 @@ import {
   normalizeSession,
   normalizeTime,
   persistUser,
-  readStoredUser,
 } from '../utils/authSession';
+import { authAPI, setAccessToken } from '../services/api';
 import { setTelemetryUser } from '../services/telemetry';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => readStoredUser());
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     setTelemetryUser(user);
   }, [user]);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function restoreSession() {
+      try {
+        const response = await authAPI.refresh();
+        if (ignore) return;
+
+        const nextUser = normalizeSession(response.data);
+        setAccessToken(nextUser.token);
+        persistUser(nextUser);
+        setUser(nextUser);
+      } catch (error) {
+        if (!ignore) {
+          setAccessToken(null);
+          clearStoredUser();
+          setUser(null);
+        }
+      } finally {
+        if (!ignore) {
+          setAuthLoading(false);
+        }
+      }
+    }
+
+    restoreSession();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const login = (sessionPayload) => {
     const nextUser = normalizeSession(sessionPayload);
+    setAccessToken(nextUser.token);
     persistUser(nextUser);
     setUser(nextUser);
   };
@@ -40,12 +73,13 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    setAccessToken(null);
     clearStoredUser();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUserFromProfile }}>
+    <AuthContext.Provider value={{ user, authLoading, login, logout, updateUserFromProfile }}>
       {children}
     </AuthContext.Provider>
   );

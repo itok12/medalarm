@@ -23,7 +23,6 @@ describe('authSession', () => {
       userId: 7,
       username: 'alice',
       email: '',
-      refreshToken: '',
       emailRemindersEnabled: true,
       defaultAlarmTime: '09:45',
     }));
@@ -35,29 +34,32 @@ describe('authSession', () => {
       userId: 5,
       username: 'meduser',
       email: 'meduser@example.com',
-      refreshToken: 'refresh-token',
       timezone: 'Europe/London',
       emailRemindersEnabled: true,
       defaultAlarmTime: '07:30:00',
     });
 
     expect(readStoredUser()).toEqual({
-      token: 'access-token',
       userId: 5,
       username: 'meduser',
       email: 'meduser@example.com',
-      refreshToken: 'refresh-token',
       timezone: 'Europe/London',
       emailRemindersEnabled: true,
       defaultAlarmTime: '07:30',
     });
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
   });
 
-  it('clears every auth key on logout', () => {
+  it('clears every auth key and legacy token key on logout', () => {
     Object.values(AUTH_STORAGE_KEYS).forEach((key) => localStorage.setItem(key, 'value'));
+    localStorage.setItem('token', 'legacy-access-token');
+    localStorage.setItem('refreshToken', 'legacy-refresh-token');
     clearStoredUser();
     Object.values(AUTH_STORAGE_KEYS).forEach((key) => {
       expect(localStorage.getItem(key)).toBeNull();
     });
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
   });
 });

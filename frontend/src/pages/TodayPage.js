@@ -8,6 +8,7 @@ import {
   Chip,
   CircularProgress,
   Grid,
+  Skeleton,
   Snackbar,
   Stack,
   Typography,
@@ -21,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import AppScreen from '../components/Layout/AppScreen';
 import NextAlarmCard from '../components/Dashboard/NextAlarmCard';
 import ReminderPermissionCard from '../components/Common/ReminderPermissionCard';
+import SectionErrorBoundary from '../components/Common/SectionErrorBoundary';
 import OnboardingChecklistCard from '../components/Onboarding/OnboardingChecklistCard';
 import { useAuth } from '../context/AuthContext';
 import { useMedData } from '../context/MedDataContext';
@@ -40,6 +42,38 @@ function getGreeting() {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function TodayPlanSkeleton() {
+  return (
+    <Stack spacing={1.5}>
+      {[0, 1, 2].map((item) => (
+        <Card variant="outlined" key={item} sx={{ borderRadius: 4 }}>
+          <CardContent
+            sx={{
+              display: 'flex',
+              gap: 2,
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+            }}
+          >
+            <Box sx={{ width: { xs: '100%', sm: '45%' } }}>
+              <Skeleton variant="text" width={120} />
+              <Skeleton variant="text" width={96} height={42} />
+              <Skeleton variant="text" width="70%" />
+              <Skeleton variant="text" width="52%" />
+            </Box>
+            <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+              <Skeleton variant="rounded" width={84} height={38} />
+              <Skeleton variant="rounded" width={92} height={38} />
+              <Skeleton variant="rounded" width={64} height={38} />
+            </Stack>
+          </CardContent>
+        </Card>
+      ))}
+    </Stack>
+  );
 }
 
 function TodayPage() {
@@ -214,10 +248,21 @@ function TodayPage() {
               Fast, thumb-friendly actions for the doses scheduled today.
             </Typography>
 
+            <SectionErrorBoundary
+              source="TodayPage.plan"
+              message="Today's plan could not be displayed."
+            >
             {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={30} />
-              </Box>
+              <>
+                <Alert
+                  severity="info"
+                  icon={<CircularProgress size={18} />}
+                  sx={{ mb: 2 }}
+                >
+                  Connecting to MedAlarm. This can take a moment when the service is waking up.
+                </Alert>
+                <TodayPlanSkeleton />
+              </>
             ) : todaysAlarms.length === 0 ? (
               <Alert severity="info">No active alarms are scheduled for today.</Alert>
             ) : (
@@ -247,7 +292,7 @@ function TodayPage() {
                               {medicine?.name || 'Medicine'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {medicine?.dosage || 'Dose not set'} • {medicine?.frequency || 'Schedule not set'}
+                              {medicine?.dosage || 'Dose not set'} - {medicine?.frequency || 'Schedule not set'}
                             </Typography>
                           </Box>
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -281,6 +326,7 @@ function TodayPage() {
                 })}
               </Grid>
             )}
+            </SectionErrorBoundary>
           </CardContent>
         </Card>
       </Stack>

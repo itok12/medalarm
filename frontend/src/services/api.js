@@ -30,7 +30,9 @@ function inferApiBaseUrl() {
     hostname === '0.0.0.0';
 
   if (isNativePlatform) {
-    return 'https://medalarm-backend-1jax.onrender.com/api';
+    return process.env.NODE_ENV === 'production'
+      ? '/api'
+      : 'http://10.0.2.2:8080/api';
   }
 
   if (isLocalHost) {
@@ -49,15 +51,24 @@ function resolveApiBaseUrl() {
 const API_BASE_URL = resolveApiBaseUrl();
 
 const STORAGE_KEYS = {
-  token: 'token',
   userId: 'userId',
   username: 'username',
   email: 'email',
-  refreshToken: 'refreshToken',
   timezone: 'timezone',
   emailRemindersEnabled: 'emailRemindersEnabled',
   defaultAlarmTime: 'defaultAlarmTime',
 };
+
+const LEGACY_TOKEN_STORAGE_KEYS = ['token', 'refreshToken'];
+let accessToken = null;
+
+function setAccessToken(token) {
+  accessToken = token || null;
+}
+
+function getAccessToken() {
+  return accessToken;
+}
 
 function normalizeTime(value) {
   if (!value) return '08:00';
@@ -65,13 +76,14 @@ function normalizeTime(value) {
 }
 
 function persistSessionFields(data) {
-  if (data.token) localStorage.setItem(STORAGE_KEYS.token, data.token);
+  if (Object.prototype.hasOwnProperty.call(data, 'token')) {
+    setAccessToken(data.token);
+  }
   if (data.userId != null) localStorage.setItem(STORAGE_KEYS.userId, String(data.userId));
   if (data.username) localStorage.setItem(STORAGE_KEYS.username, data.username);
   if (Object.prototype.hasOwnProperty.call(data, 'email')) {
     localStorage.setItem(STORAGE_KEYS.email, data.email || '');
   }
-  if (data.refreshToken) localStorage.setItem(STORAGE_KEYS.refreshToken, data.refreshToken);
   if (Object.prototype.hasOwnProperty.call(data, 'timezone')) {
     localStorage.setItem(STORAGE_KEYS.timezone, data.timezone || 'UTC');
   }
@@ -84,7 +96,9 @@ function persistSessionFields(data) {
 }
 
 function clearSessionFields() {
+  setAccessToken(null);
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  LEGACY_TOKEN_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
 const api = axios.create({
@@ -92,18 +106,20 @@ const api = axios.create({
   // Render free instances can take tens of seconds to wake up after inactivity.
   timeout: 65000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(STORAGE_KEYS.token);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (accessToken) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
 });
 
 let isRefreshing = false;
 let failedQueue = [];
+let refreshPromise = null;
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((promiseHandlers) => {
@@ -114,6 +130,25 @@ const processQueue = (error, token = null) => {
     }
   });
   failedQueue = [];
+};
+
+const requestTokenRefresh = () => {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_BASE_URL}/auth/refresh`, {}, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 65000,
+        withCredentials: true,
+      })
+      .then((response) => {
+        persistSessionFields(response.data);
+        return response;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
 };
 
 api.interceptors.response.use(
@@ -131,6 +166,7 @@ api.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
+            originalRequest.headers = originalRequest.headers || {};
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return api(originalRequest);
           })
@@ -140,18 +176,10 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
-      if (!refreshToken) {
-        isRefreshing = false;
-        clearSessionFields();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-        persistSessionFields(response.data);
+        const response = await requestTokenRefresh();
         processQueue(null, response.data.token);
+        originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
         return api(originalRequest);
       } catch (refreshError) {
@@ -171,7 +199,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
-  refresh: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
+  refresh: () => requestTokenRefresh(),
   logout: () => api.post('/auth/logout'),
 };
 
@@ -210,5 +238,5 @@ export const caregiverAPI = {
     api.get(`/caregivers/patients/${patientId}/logs`),
 };
 
-export { clearSessionFields, persistSessionFields };
+export { clearSessionFields, getAccessToken, persistSessionFields, setAccessToken };
 export default api;

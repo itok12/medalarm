@@ -1,9 +1,11 @@
 package com.example.medapp.controller;
 
 import com.example.medapp.dto.CaregiverPatientRequest;
+import com.example.medapp.entity.CaregiverAccessLog;
 import com.example.medapp.entity.CaregiverRelation;
 import com.example.medapp.entity.MedicationLog;
 import com.example.medapp.entity.User;
+import com.example.medapp.repository.CaregiverAccessLogRepository;
 import com.example.medapp.repository.CaregiverRepository;
 import com.example.medapp.repository.UserRepository;
 import com.example.medapp.service.CurrentUserService;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @RestController
@@ -21,15 +24,18 @@ import java.util.stream.Collectors;
 public class CaregiverController {
 
     private final CaregiverRepository caregiverRepository;
+    private final CaregiverAccessLogRepository caregiverAccessLogRepository;
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
     private final MedicationLogService medicationLogService;
 
     public CaregiverController(CaregiverRepository caregiverRepository,
+                                CaregiverAccessLogRepository caregiverAccessLogRepository,
                                 UserRepository userRepository,
                                 CurrentUserService currentUserService,
                                 MedicationLogService medicationLogService) {
         this.caregiverRepository = caregiverRepository;
+        this.caregiverAccessLogRepository = caregiverAccessLogRepository;
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
         this.medicationLogService = medicationLogService;
@@ -83,6 +89,16 @@ public class CaregiverController {
 
     @GetMapping("/patients/{patientId}/logs")
     public ResponseEntity<List<MedicationLog>> getPatientLogs(@PathVariable Long patientId) {
-        return ResponseEntity.ok(medicationLogService.getLogsForPatient(patientId));
+        List<MedicationLog> logs = medicationLogService.getLogsForPatient(patientId);
+        recordCaregiverAccess(patientId);
+        return ResponseEntity.ok(logs);
+    }
+
+    private void recordCaregiverAccess(Long patientId) {
+        CaregiverAccessLog accessLog = new CaregiverAccessLog();
+        accessLog.setCaregiver(currentUserService.getCurrentUser());
+        accessLog.setPatient(userRepository.getReferenceById(patientId));
+        accessLog.setAccessedAt(LocalDateTime.now());
+        caregiverAccessLogRepository.save(accessLog);
     }
 }

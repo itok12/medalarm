@@ -9,10 +9,15 @@ import com.example.medapp.security.JwtUtil;
 import com.example.medapp.service.CurrentUserService;
 import com.example.medapp.service.RefreshTokenService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -22,22 +27,33 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private static final String REFRESH_COOKIE_NAME = "medalarm_refresh";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final CurrentUserService currentUserService;
+    private final boolean refreshCookieSecure;
+    private final String refreshCookieSameSite;
+    private final long refreshTokenDays;
 
     public AuthController(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
                           JwtUtil jwtUtil,
                           RefreshTokenService refreshTokenService,
-                          CurrentUserService currentUserService) {
+                          CurrentUserService currentUserService,
+                          @Value("${medalarm.auth.refresh-cookie.secure:false}") boolean refreshCookieSecure,
+                          @Value("${medalarm.auth.refresh-cookie.same-site:Strict}") String refreshCookieSameSite,
+                          @Value("${jwt.refresh-token-days:7}") long refreshTokenDays) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
         this.currentUserService = currentUserService;
+        this.refreshCookieSecure = refreshCookieSecure;
+        this.refreshCookieSameSite = refreshCookieSameSite;
+        this.refreshTokenDays = refreshTokenDays;
     }
 
     @PostMapping("/register")
@@ -61,7 +77,7 @@ public class AuthController {
         User saved = userRepository.save(user);
 
         String token = jwtUtil.generateToken(saved.getUsername());
-        return ResponseEntity.ok(buildAuthResponse(saved, token, refreshToken));
+        return authResponse(saved, token, refreshToken);
     }
 
     @PostMapping("/login")
@@ -80,12 +96,18 @@ public class AuthController {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
-        return ResponseEntity.ok(buildAuthResponse(user, token, refreshToken));
+        return authResponse(user, token, refreshToken);
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
+    public ResponseEntity<?> refresh(
+            @RequestBody(required = false) Map<String, String> body,
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshCookie
+    ) {
+        String refreshToken = body != null ? body.get("refreshToken") : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = refreshCookie;
+        }
         if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.status(401).body("Missing refreshToken");
         }
@@ -99,28 +121,70 @@ public class AuthController {
         String newRefreshToken = refreshTokenService.rotateRefreshToken(user);
         userRepository.save(user);
         String newToken = jwtUtil.generateToken(user.getUsername());
-        return ResponseEntity.ok(buildAuthResponse(user, newToken, newRefreshToken));
+        return authResponse(user, newToken, newRefreshToken);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        User user = currentUserService.getCurrentUser();
-        refreshTokenService.clear(user);
-        userRepository.save(user);
-        return ResponseEntity.ok(Map.of("message", "Logged out"));
+    public ResponseEntity<?> logout(
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshCookie
+    ) {
+        User user = resolveLogoutUser(refreshCookie);
+        if (user != null) {
+            refreshTokenService.clear(user);
+            userRepository.save(user);
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expireRefreshCookie().toString())
+                .body(Map.of("message", "Logged out"));
     }
 
-    private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
+    private ResponseEntity<AuthResponse> authResponse(User user, String accessToken, String refreshToken) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken).toString())
+                .body(buildAuthResponse(user, accessToken));
+    }
+
+    private AuthResponse buildAuthResponse(User user, String accessToken) {
         return new AuthResponse(
                 accessToken,
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                refreshToken,
                 user.getTimezone(),
                 user.isEmailRemindersEnabled(),
                 user.getDefaultAlarmTime() != null ? user.getDefaultAlarmTime().toString() : null
         );
+    }
+
+    private User resolveLogoutUser(String refreshCookie) {
+        try {
+            return currentUserService.getCurrentUser();
+        } catch (AccessDeniedException ex) {
+            if (refreshCookie == null || refreshCookie.isBlank()) {
+                return null;
+            }
+            return refreshTokenService.findByRawToken(refreshCookie);
+        }
+    }
+
+    private ResponseCookie buildRefreshCookie(String refreshToken) {
+        return ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
+                .httpOnly(true)
+                .secure(refreshCookieSecure)
+                .sameSite(refreshCookieSameSite)
+                .path("/api/auth")
+                .maxAge(Duration.ofDays(refreshTokenDays))
+                .build();
+    }
+
+    private ResponseCookie expireRefreshCookie() {
+        return ResponseCookie.from(REFRESH_COOKIE_NAME, "")
+                .httpOnly(true)
+                .secure(refreshCookieSecure)
+                .sameSite(refreshCookieSameSite)
+                .path("/api/auth")
+                .maxAge(Duration.ZERO)
+                .build();
     }
 
     private String resolveTimezone(String timezone) {

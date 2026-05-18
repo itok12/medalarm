@@ -1,6 +1,7 @@
 package com.example.medapp.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,9 +43,10 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.username").value("testuser"))
-                .andExpect(jsonPath("$.timezone").value("Europe/London"));
+                .andExpect(jsonPath("$.timezone").value("Europe/London"))
+                .andExpect(cookie().httpOnly("medalarm_refresh", true));
     }
 
     @Test
@@ -92,7 +95,8 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty());
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(cookie().httpOnly("medalarm_refresh", true));
     }
 
     @Test
@@ -124,22 +128,19 @@ class AuthControllerTest {
                 "password", "password123",
                 "email", "refreshuser@example.com"
         );
-        String body = mockMvc.perform(post("/api/auth/register")
+        Cookie refreshCookie = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registration)))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> auth = objectMapper.readValue(body, Map.class);
-        String refreshToken = auth.get("refreshToken").toString();
+                .andExpect(cookie().httpOnly("medalarm_refresh", true))
+                .andReturn().getResponse().getCookie("medalarm_refresh");
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
+                        .cookie(refreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty());
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(cookie().httpOnly("medalarm_refresh", true));
     }
 
     @Test
@@ -149,24 +150,28 @@ class AuthControllerTest {
                 "password", "password123",
                 "email", "logoutuser@example.com"
         );
-        String body = mockMvc.perform(post("/api/auth/register")
+        var registerResult = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registration)))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
+                .andReturn();
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> auth = objectMapper.readValue(body, Map.class);
+        Map<String, Object> auth = objectMapper.readValue(
+                registerResult.getResponse().getContentAsString(),
+                Map.class
+        );
         String accessToken = auth.get("token").toString();
-        String refreshToken = auth.get("refreshToken").toString();
+        Cookie refreshCookie = registerResult.getResponse().getCookie("medalarm_refresh");
 
         mockMvc.perform(post("/api/auth/logout")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+                        .header("Authorization", "Bearer " + accessToken)
+                        .cookie(refreshCookie))
+                .andExpect(status().isOk())
+                .andExpect(cookie().maxAge("medalarm_refresh", 0));
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
+                        .cookie(refreshCookie))
                 .andExpect(status().isUnauthorized());
     }
 }
