@@ -26,6 +26,8 @@ services:
         generateValue: true
       - key: MAIL_ENABLED
         value: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: CORS_ALLOWED_ORIGINS
         value: https://medalarmapp.com,https://www.medalarmapp.com,https://*.onrender.com,http://localhost,https://localhost,capacitor://localhost
 

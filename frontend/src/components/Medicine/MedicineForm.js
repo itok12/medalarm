@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  TextField, Button, Box, MenuItem, Alert, Typography,
+  TextField, Button, Box, MenuItem, Alert, Typography, CircularProgress, Stack,
 } from '@mui/material';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { medicineAPI, alarmAPI } from '../../services/api';
+import api from '../../services/api';
 import { captureException, trackEvent } from '../../services/telemetry';
 
 function getTodayIsoDate() {
@@ -27,6 +29,9 @@ const MedicineForm = ({ onMedicineAdded }) => {
   const [medicine, setMedicine] = useState(INITIAL_MEDICINE);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState('');
+  const fileInputRef = useRef(null);
 
   const validate = () => {
     const nextErrors = {};
@@ -46,9 +51,50 @@ const MedicineForm = ({ onMedicineAdded }) => {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
+  const handleScanImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setScanning(true);
+    setScanNote('');
+    setServerError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await api.post('/medicines/scan', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      });
+
+      const { name, dosage, frequency, instructions, error: scanError } = response.data;
+
+      if (scanError) {
+        setScanNote('Could not identify the medication — please fill in manually.');
+      } else {
+        setMedicine((prev) => ({
+          ...prev,
+          name: name || prev.name,
+          dosage: dosage || prev.dosage,
+          frequency: FREQUENCIES.includes(frequency) ? frequency : prev.frequency,
+          instructions: instructions || prev.instructions,
+        }));
+        setScanNote('Fields pre-filled from your photo — review before saving.');
+        trackEvent('medicine_scanned');
+      }
+    } catch (err) {
+      captureException(err, { source: 'MedicineForm.scanImage' });
+      setScanNote('Scan failed — please fill in manually.');
+    } finally {
+      setScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setServerError('');
+    setScanNote('');
 
     const validationErrors = validate();
     if (Object.keys(validationErrors).length) {
@@ -84,10 +130,36 @@ const MedicineForm = ({ onMedicineAdded }) => {
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Add New Medicine
-      </Typography>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleScanImage}
+      />
+
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Add New Medicine
+        </Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={scanning ? <CircularProgress size={14} /> : <CameraAltIcon />}
+          disabled={scanning}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {scanning ? 'Scanning…' : 'Scan label'}
+        </Button>
+      </Stack>
+
       {serverError && <Alert severity="error" sx={{ mb: 1 }}>{serverError}</Alert>}
+      {scanNote && (
+        <Alert severity={scanNote.includes('pre-filled') ? 'success' : 'warning'} sx={{ mb: 1 }}>
+          {scanNote}
+        </Alert>
+      )}
 
       <TextField
         label="Medicine Name"
@@ -147,7 +219,7 @@ const MedicineForm = ({ onMedicineAdded }) => {
         onChange={handleChange}
         InputLabelProps={{ shrink: true }}
         error={!!errors.endDate}
-        helperText={errors.endDate || 'Optional: alarms will auto-deactivate after this date'}
+        helperText={errors.endDate || 'Optional: alarms stop after this date'}
       />
       <TextField
         label="Instructions"

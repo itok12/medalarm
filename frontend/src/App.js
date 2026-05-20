@@ -17,12 +17,8 @@ import MedicinesPage from './pages/MedicinesPage';
 import HistoryPage from './pages/HistoryPage';
 import ProfilePage from './pages/ProfilePage';
 import CaregiverPage from './pages/CaregiverPage';
-import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
-import SupportPage from './pages/SupportPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import AppShell from './components/Layout/AppShell';
 import RouteTelemetry from './components/Common/RouteTelemetry';
@@ -64,12 +60,8 @@ function AppRoutes() {
         <Route path="history" element={<HistoryPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="caregiver" element={<CaregiverPage />} />
-        <Route path="help" element={<HelpPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route path="contact" element={<ContactPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
-        <Route path="support" element={<SupportPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

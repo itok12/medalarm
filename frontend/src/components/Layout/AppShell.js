@@ -21,11 +21,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import PersonIcon from '@mui/icons-material/Person';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import EmailIcon from '@mui/icons-material/Email';
 import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined';
-import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -56,11 +52,7 @@ const PRIMARY_NAV_ITEMS = [
 
 const MORE_ITEMS = [
   { label: 'Profile', path: '/profile', icon: <PersonIcon fontSize="small" /> },
-  { label: 'Help', path: '/help', icon: <HelpOutlineIcon fontSize="small" /> },
-  { label: 'Support', path: '/support', icon: <SupportAgentOutlinedIcon fontSize="small" /> },
   { label: 'Privacy', path: '/privacy', icon: <GavelOutlinedIcon fontSize="small" /> },
-  { label: 'About', path: '/about', icon: <InfoOutlinedIcon fontSize="small" /> },
-  { label: 'Contact', path: '/contact', icon: <EmailIcon fontSize="small" /> },
 ];
 
 function getCurrentPrimaryPath(pathname) {
