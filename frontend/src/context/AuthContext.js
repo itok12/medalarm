@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   clearStoredGuest,
   clearStoredUser,
@@ -7,6 +7,7 @@ import {
   normalizeTime,
   persistGuest,
   persistUser,
+  readStoredUser,
 } from '../utils/authSession';
 import { authAPI, setAccessToken } from '../services/api';
 import { setTelemetryUser } from '../services/telemetry';
@@ -19,6 +20,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const startGuestSession = useCallback(() => {
+    setAccessToken(null);
+    clearStoredUser();
+    persistGuest();
+    setUser(GUEST_USER);
+  }, []);
+
   useEffect(() => {
     setTelemetryUser(user);
   }, [user]);
@@ -27,10 +35,18 @@ export function AuthProvider({ children }) {
     let ignore = false;
 
     async function restoreSession() {
-      // Guest session — skip the API refresh entirely
+      // Guest session: skip the API refresh entirely.
       if (isStoredGuest()) {
         if (!ignore) {
           setUser(GUEST_USER);
+          setAuthLoading(false);
+        }
+        return;
+      }
+
+      if (!readStoredUser()) {
+        if (!ignore) {
+          startGuestSession();
           setAuthLoading(false);
         }
         return;
@@ -46,12 +62,7 @@ export function AuthProvider({ children }) {
         setUser(nextUser);
       } catch (error) {
         if (!ignore) {
-          setAccessToken(null);
-          clearStoredUser();
-          // No valid session — drop straight into guest mode so the
-          // user lands in the app rather than the login page.
-          persistGuest();
-          setUser(GUEST_USER);
+          startGuestSession();
         }
       } finally {
         if (!ignore) {
@@ -64,7 +75,7 @@ export function AuthProvider({ children }) {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [startGuestSession]);
 
   const login = (sessionPayload) => {
     clearStoredGuest();
@@ -75,8 +86,7 @@ export function AuthProvider({ children }) {
   };
 
   const guestLogin = () => {
-    persistGuest();
-    setUser(GUEST_USER);
+    startGuestSession();
   };
 
   const updateUserFromProfile = (profilePayload) => {
@@ -96,10 +106,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    setAccessToken(null);
-    clearStoredUser();
-    clearStoredGuest();
-    setUser(null);
+    startGuestSession();
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -28,14 +28,21 @@ function resolveNextPath(search) {
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, guestLogin } = useAuth();
+  const { user, authLoading, login, guestLogin } = useAuth();
 
   const [form, setForm] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
   const deleted = new URLSearchParams(location.search).get('deleted') === '1';
+  const syncRequested = new URLSearchParams(location.search).get('sync') === '1';
   const nextPath = resolveNextPath(location.search);
+
+  useEffect(() => {
+    if (!authLoading && user?.guest && !syncRequested && !deleted) {
+      navigate('/', { replace: true });
+    }
+  }, [authLoading, deleted, navigate, syncRequested, user]);
 
   const validate = () => {
     const nextErrors = {};

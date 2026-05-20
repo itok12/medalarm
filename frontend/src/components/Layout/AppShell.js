@@ -112,7 +112,7 @@ function AppShell() {
     logout();
     trackEvent('logout');
     setMenuAnchor(null);
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -253,7 +253,7 @@ function AppShell() {
           <Button
             size="small"
             variant="outlined"
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/login?sync=1')}
             sx={{
               color: '#fff',
               borderColor: 'rgba(255,255,255,0.6)',
