@@ -48,7 +48,10 @@ export function AuthProvider({ children }) {
         if (!ignore) {
           setAccessToken(null);
           clearStoredUser();
-          setUser(null);
+          // No valid session — drop straight into guest mode so the
+          // user lands in the app rather than the login page.
+          persistGuest();
+          setUser(GUEST_USER);
         }
       } finally {
         if (!ignore) {
