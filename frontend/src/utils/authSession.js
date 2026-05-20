@@ -57,6 +57,20 @@ export function clearStoredUser() {
   LEGACY_TOKEN_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
+const GUEST_KEY = 'medalarm-guest';
+
+export function persistGuest() {
+  localStorage.setItem(GUEST_KEY, 'true');
+}
+
+export function isStoredGuest() {
+  return localStorage.getItem(GUEST_KEY) === 'true';
+}
+
+export function clearStoredGuest() {
+  localStorage.removeItem(GUEST_KEY);
+}
+
 export function normalizeSession(data) {
   return {
     token: data.token,

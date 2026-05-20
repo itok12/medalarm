@@ -1,4 +1,9 @@
 import axios from 'axios';
+import * as guest from './guestDataService';
+
+function isGuestMode() {
+  try { return localStorage.getItem('medalarm-guest') === 'true'; } catch { return false; }
+}
 
 function getRuntimeConfigBaseUrl() {
   if (typeof window === 'undefined') return '';
@@ -204,24 +209,24 @@ export const authAPI = {
 };
 
 export const medicineAPI = {
-  getAll: () => api.get('/medicines'),
-  create: (medicine) => api.post('/medicines', medicine),
-  update: (id, data) => api.put(`/medicines/${id}`, data),
-  delete: (id) => api.delete(`/medicines/${id}`),
+  getAll: () => isGuestMode() ? guest.getMedicines() : api.get('/medicines'),
+  create: (medicine) => isGuestMode() ? guest.createMedicine(medicine) : api.post('/medicines', medicine),
+  update: (id, data) => isGuestMode() ? guest.updateMedicine(id, data) : api.put(`/medicines/${id}`, data),
+  delete: (id) => isGuestMode() ? guest.deleteMedicine(id) : api.delete(`/medicines/${id}`),
 };
 
 export const alarmAPI = {
-  getAll: () => api.get('/alarms'),
-  create: (alarm) => api.post('/alarms', alarm),
-  toggle: (alarmId, active) => api.patch(`/alarms/${alarmId}`, { active }),
-  generate: (medicineId) => api.post('/alarms/generate', { medicineId }),
-  delete: (id) => api.delete(`/alarms/${id}`),
+  getAll: () => isGuestMode() ? guest.getAlarms() : api.get('/alarms'),
+  create: (alarm) => isGuestMode() ? guest.createAlarm(alarm) : api.post('/alarms', alarm),
+  toggle: (alarmId, active) => isGuestMode() ? guest.toggleAlarm(alarmId, active) : api.patch(`/alarms/${alarmId}`, { active }),
+  generate: (medicineId) => isGuestMode() ? guest.generateAlarms(medicineId) : api.post('/alarms/generate', { medicineId }),
+  delete: (id) => isGuestMode() ? guest.deleteAlarm(id) : api.delete(`/alarms/${id}`),
 };
 
 export const logAPI = {
-  log: (alarmId, status) => api.post('/logs', { alarmId, status }),
-  getMine: () => api.get('/logs'),
-  exportCSV: () => api.get('/logs/export', { responseType: 'blob' }),
+  log: (alarmId, status) => isGuestMode() ? guest.addLog(alarmId, status) : api.post('/logs', { alarmId, status }),
+  getMine: () => isGuestMode() ? guest.getLogs() : api.get('/logs'),
+  exportCSV: () => isGuestMode() ? guest.exportCSV() : api.get('/logs/export', { responseType: 'blob' }),
 };
 
 export const userAPI = {

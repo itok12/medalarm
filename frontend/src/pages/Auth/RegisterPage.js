@@ -28,7 +28,7 @@ function resolveNextPath(search) {
 function RegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, guestLogin } = useAuth();
 
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -223,12 +223,15 @@ function RegisterPage() {
                 Sign in
               </Link>
             </Typography>
-            <Typography
-              sx={{ mt: 1.5, textAlign: 'center' }}
-              variant="caption"
-              color="text.secondary"
-            >
-              After signup, MedAlarm walks you through reminders, defaults, and your first medicine.
+            <Typography sx={{ mt: 2, textAlign: 'center' }} variant="body2">
+              <Link
+                component="button"
+                type="button"
+                onClick={() => { guestLogin(); navigate(nextPath, { replace: true }); }}
+                sx={{ fontWeight: 600, color: 'text.secondary' }}
+              >
+                Continue without an account →
+              </Link>
             </Typography>
           </Paper>
         </Fade>

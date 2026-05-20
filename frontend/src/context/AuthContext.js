@@ -1,14 +1,19 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
+  clearStoredGuest,
   clearStoredUser,
+  isStoredGuest,
   normalizeSession,
   normalizeTime,
+  persistGuest,
   persistUser,
 } from '../utils/authSession';
 import { authAPI, setAccessToken } from '../services/api';
 import { setTelemetryUser } from '../services/telemetry';
 
 const AuthContext = createContext(null);
+
+const GUEST_USER = { guest: true, userId: 'guest-local', username: 'Guest' };
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -22,6 +27,15 @@ export function AuthProvider({ children }) {
     let ignore = false;
 
     async function restoreSession() {
+      // Guest session — skip the API refresh entirely
+      if (isStoredGuest()) {
+        if (!ignore) {
+          setUser(GUEST_USER);
+          setAuthLoading(false);
+        }
+        return;
+      }
+
       try {
         const response = await authAPI.refresh();
         if (ignore) return;
@@ -50,15 +64,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (sessionPayload) => {
+    clearStoredGuest();
     const nextUser = normalizeSession(sessionPayload);
     setAccessToken(nextUser.token);
     persistUser(nextUser);
     setUser(nextUser);
   };
 
+  const guestLogin = () => {
+    persistGuest();
+    setUser(GUEST_USER);
+  };
+
   const updateUserFromProfile = (profilePayload) => {
     setUser((prev) => {
-      if (!prev) return prev;
+      if (!prev || prev.guest) return prev;
       const nextUser = {
         ...prev,
         email: profilePayload.email ?? prev.email,
@@ -75,11 +95,12 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setAccessToken(null);
     clearStoredUser();
+    clearStoredGuest();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, authLoading, login, logout, updateUserFromProfile }}>
+    <AuthContext.Provider value={{ user, authLoading, login, guestLogin, logout, updateUserFromProfile }}>
       {children}
     </AuthContext.Provider>
   );

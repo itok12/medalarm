@@ -102,10 +102,12 @@ function AppShell() {
   }, [alarms, medicines]);
 
   const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Logout request failed:', error);
+    if (!user?.guest) {
+      try {
+        await authAPI.logout();
+      } catch (error) {
+        console.error('Logout request failed:', error);
+      }
     }
     logout();
     trackEvent('logout');
@@ -230,6 +232,40 @@ function AppShell() {
           </Menu>
         </Toolbar>
       </AppBar>
+
+      {user?.guest && (
+        <Box
+          sx={{
+            bgcolor: 'secondary.main',
+            color: '#fff',
+            py: 0.6,
+            px: 2,
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1.5,
+          }}
+        >
+          <Typography variant="caption" sx={{ opacity: 0.92 }}>
+            Your data is saved on this device only.
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => navigate('/login')}
+            sx={{
+              color: '#fff',
+              borderColor: 'rgba(255,255,255,0.6)',
+              py: 0.2,
+              fontSize: '0.7rem',
+              '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
+            Sign in to sync
+          </Button>
+        </Box>
+      )}
 
       <Box sx={{ pb: { xs: 'calc(84px + env(safe-area-inset-bottom))', md: 4 } }}>
         <Outlet />

@@ -28,7 +28,7 @@ function resolveNextPath(search) {
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, guestLogin } = useAuth();
 
   const [form, setForm] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -210,12 +210,15 @@ function LoginPage() {
                 Create one
               </Link>
             </Typography>
-            <Typography
-              sx={{ mt: 1.5, textAlign: 'center' }}
-              variant="caption"
-              color="text.secondary"
-            >
-              By signing in, you can review support, contact, and privacy details from the app menu at any time.
+            <Typography sx={{ mt: 2, textAlign: 'center' }} variant="body2">
+              <Link
+                component="button"
+                type="button"
+                onClick={() => { guestLogin(); navigate(nextPath, { replace: true }); }}
+                sx={{ fontWeight: 600, color: 'text.secondary' }}
+              >
+                Continue without an account →
+              </Link>
             </Typography>
           </Paper>
         </Fade>
