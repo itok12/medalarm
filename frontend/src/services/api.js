@@ -190,7 +190,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearSessionFields();
-        window.location.href = '/login';
+        // Do not redirect — AuthContext handles session state
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

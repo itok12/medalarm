@@ -46,7 +46,7 @@ function Navbar() {
       console.error('Logout request failed:', error);
     }
     logout();
-    navigate('/login');
+    navigate('/');
     setDrawerOpen(false);
   };
 
