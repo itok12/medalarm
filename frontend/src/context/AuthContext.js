@@ -27,17 +27,20 @@ export function AuthProvider({ children }) {
     let ignore = false;
 
     async function restoreSession() {
-      // Open the app immediately as guest — no spinner wait, no login wall.
+      // Snapshot guest flag BEFORE we touch anything
+      const alreadyGuest = isStoredGuest();
+
+      // Show the app immediately — no spinner, no login wall
       if (!ignore) {
         persistGuest();
         setUser(GUEST_USER);
         setAuthLoading(false);
       }
 
-      // Already a confirmed guest with no prior account — nothing more to do.
-      if (isStoredGuest()) return;
+      // Returning guest with no account — skip the API call entirely
+      if (alreadyGuest) return;
 
-      // Try to silently restore a real authenticated session in the background.
+      // First visit or returning signed-in user: try to restore a real session silently
       try {
         const response = await authAPI.refresh();
         if (ignore) return;
@@ -47,7 +50,7 @@ export function AuthProvider({ children }) {
         clearStoredGuest();
         setUser(nextUser);
       } catch {
-        // No valid session — guest mode already active.
+        // No valid session — guest mode is already active, nothing to do
       }
     }
 
