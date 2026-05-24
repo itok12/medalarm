@@ -25,7 +25,7 @@ import RouteTelemetry from './components/Common/RouteTelemetry';
 import { isNativeMobilePlatform } from './services/nativePlatform';
 
 function ProtectedRoute({ children }) {
-  const { user, authLoading } = useAuth();
+  const { authLoading } = useAuth();
   if (authLoading) {
     return (
       <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
@@ -33,7 +33,6 @@ function ProtectedRoute({ children }) {
       </Box>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 

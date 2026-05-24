@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   clearStoredGuest,
   clearStoredUser,
@@ -7,7 +7,6 @@ import {
   normalizeTime,
   persistGuest,
   persistUser,
-  readStoredUser,
 } from '../utils/authSession';
 import { authAPI, setAccessToken } from '../services/api';
 import { setTelemetryUser } from '../services/telemetry';
@@ -20,13 +19,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const startGuestSession = useCallback(() => {
-    setAccessToken(null);
-    clearStoredUser();
-    persistGuest();
-    setUser(GUEST_USER);
-  }, []);
-
   useEffect(() => {
     setTelemetryUser(user);
   }, [user]);
@@ -35,47 +27,33 @@ export function AuthProvider({ children }) {
     let ignore = false;
 
     async function restoreSession() {
-      // Guest session: skip the API refresh entirely.
-      if (isStoredGuest()) {
-        if (!ignore) {
-          setUser(GUEST_USER);
-          setAuthLoading(false);
-        }
-        return;
+      // Open the app immediately as guest — no spinner wait, no login wall.
+      if (!ignore) {
+        persistGuest();
+        setUser(GUEST_USER);
+        setAuthLoading(false);
       }
 
-      if (!readStoredUser()) {
-        if (!ignore) {
-          startGuestSession();
-          setAuthLoading(false);
-        }
-        return;
-      }
+      // Already a confirmed guest with no prior account — nothing more to do.
+      if (isStoredGuest()) return;
 
+      // Try to silently restore a real authenticated session in the background.
       try {
         const response = await authAPI.refresh();
         if (ignore) return;
-
         const nextUser = normalizeSession(response.data);
         setAccessToken(nextUser.token);
         persistUser(nextUser);
+        clearStoredGuest();
         setUser(nextUser);
-      } catch (error) {
-        if (!ignore) {
-          startGuestSession();
-        }
-      } finally {
-        if (!ignore) {
-          setAuthLoading(false);
-        }
+      } catch {
+        // No valid session — guest mode already active.
       }
     }
 
     restoreSession();
-    return () => {
-      ignore = true;
-    };
-  }, [startGuestSession]);
+    return () => { ignore = true; };
+  }, []);
 
   const login = (sessionPayload) => {
     clearStoredGuest();
@@ -86,7 +64,8 @@ export function AuthProvider({ children }) {
   };
 
   const guestLogin = () => {
-    startGuestSession();
+    persistGuest();
+    setUser(GUEST_USER);
   };
 
   const updateUserFromProfile = (profilePayload) => {
@@ -106,7 +85,10 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    startGuestSession();
+    setAccessToken(null);
+    clearStoredUser();
+    clearStoredGuest();
+    setUser(null);
   };
 
   return (
