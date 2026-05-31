@@ -23,6 +23,8 @@ const INITIAL_MEDICINE = {
   imageUrl: '',
   startDate: getTodayIsoDate(),
   endDate: '',
+  pillsRemaining: '',
+  pillsPerDose: '1',
 };
 
 const MedicineForm = ({ onMedicineAdded }) => {
@@ -106,6 +108,8 @@ const MedicineForm = ({ onMedicineAdded }) => {
       const payload = {
         ...medicine,
         endDate: medicine.endDate || null,
+        pillsRemaining: medicine.pillsRemaining !== '' ? Number(medicine.pillsRemaining) : null,
+        pillsPerDose: medicine.pillsPerDose !== '' ? Number(medicine.pillsPerDose) : 1,
       };
       const response = await medicineAPI.create(payload);
 
@@ -221,6 +225,29 @@ const MedicineForm = ({ onMedicineAdded }) => {
         error={!!errors.endDate}
         helperText={errors.endDate || 'Optional: alarms stop after this date'}
       />
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <TextField
+          label="Current pill count"
+          name="pillsRemaining"
+          type="number"
+          inputProps={{ min: 0, step: 1 }}
+          fullWidth
+          margin="dense"
+          value={medicine.pillsRemaining}
+          onChange={handleChange}
+          helperText="Optional — enables refill warnings"
+        />
+        <TextField
+          label="Pills per dose"
+          name="pillsPerDose"
+          type="number"
+          inputProps={{ min: 1, step: 1 }}
+          fullWidth
+          margin="dense"
+          value={medicine.pillsPerDose}
+          onChange={handleChange}
+        />
+      </Box>
       <TextField
         label="Instructions"
         name="instructions"

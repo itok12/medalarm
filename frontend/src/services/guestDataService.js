@@ -1,4 +1,4 @@
-import { getJson, setJson } from './deviceStorage';
+import { getJson, removeValue, setJson } from './deviceStorage';
 
 const STORE_KEY = 'medalarm-guest-store-v1';
 
@@ -136,6 +136,13 @@ export async function addLog(alarmId, status) {
   };
 
   store.logs.push(entry);
+
+  // Decrement pill supply when a dose is taken (mirrors MedicationLogService)
+  if (status === 'TAKEN' && medicine && medicine.pillsRemaining != null) {
+    const perDose = medicine.pillsPerDose || 1;
+    medicine.pillsRemaining = Math.max(0, medicine.pillsRemaining - perDose);
+  }
+
   await save(store);
   return ok(entry);
 }
@@ -157,5 +164,5 @@ export async function exportCSV() {
 }
 
 export function clearGuestStore() {
-  localStorage.removeItem(STORE_KEY);
+  return removeValue(STORE_KEY);
 }
