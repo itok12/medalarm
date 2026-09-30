@@ -29,8 +29,9 @@ import { useMedData } from '../context/MedDataContext';
 import { useSettings } from '../context/SettingsContext';
 import { logAPI } from '../services/api';
 import {
-  cancelNudgesForAlarm,
+  getExactAlarmStatus,
   getReminderPermissionStatus,
+  openExactAlarmSettings,
   requestReminderPermission,
   scheduleSnoozedReminder,
   syncNativeAlarmNotifications,
@@ -83,6 +84,7 @@ function TodayPage() {
   const { settings } = useSettings();
   const { medicines, alarms, logs, loading, error, offline, refreshAll, lastSyncedAt } = useMedData();
   const [permissionStatus, setPermissionStatus] = useState('prompt');
+  const [exactStatus, setExactStatus] = useState('granted');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const medNameById = useMemo(() => {
@@ -112,7 +114,19 @@ function TodayPage() {
   }), [medicines]);
 
   useEffect(() => {
-    getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
+    const checkPermissions = () => {
+      getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
+      getExactAlarmStatus().then(setExactStatus).catch(() => setExactStatus('granted'));
+    };
+
+    // Re-check when the user comes back from the system settings screen.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') checkPermissions();
+    };
+
+    checkPermissions();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   const showMessage = (message, severity = 'success') => {
@@ -122,7 +136,7 @@ function TodayPage() {
   const handleLog = async (alarmId, status) => {
     try {
       await logAPI.log(alarmId, status);
-      cancelNudgesForAlarm(alarmId).catch(() => {});
+      // Refreshing the logs re-runs the reminder sync, which drops this dose's nudges.
       await refreshAll({ background: true });
       trackEvent('dose_logged', { status });
       showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.');
@@ -138,6 +152,7 @@ function TodayPage() {
       await logAPI.log(alarm.id, 'SNOOZED');
       await scheduleSnoozedReminder({
         alarmId: alarm.id,
+        medicineId: alarm.medicineId,
         medicineName: medicine?.name,
         dosage: medicine?.dosage,
         minutes: settings.snoozeDurationMinutes,
@@ -155,10 +170,20 @@ function TodayPage() {
     const status = await requestReminderPermission();
     setPermissionStatus(status);
     if (status === 'granted') {
-      await syncNativeAlarmNotifications(alarms, medicines);
+      await syncNativeAlarmNotifications(alarms, medicines, logs);
       showMessage('Reminders are enabled.');
     }
     trackEvent('reminder_permission_requested', { status });
+  };
+
+  const allowExactReminders = async () => {
+    try {
+      const status = await openExactAlarmSettings();
+      setExactStatus(status);
+      trackEvent('exact_alarm_permission_requested', { status });
+    } catch (settingsError) {
+      captureException(settingsError, { source: 'TodayPage.allowExactReminders' });
+    }
   };
 
   return (
@@ -178,7 +203,12 @@ function TodayPage() {
 
         <OnboardingChecklistCard />
 
-        <ReminderPermissionCard status={permissionStatus} onEnable={enableReminders} />
+        <ReminderPermissionCard
+          status={permissionStatus}
+          exactStatus={exactStatus}
+          onEnable={enableReminders}
+          onAllowExact={allowExactReminders}
+        />
 
         <Card
           sx={{

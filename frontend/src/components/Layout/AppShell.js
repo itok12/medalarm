@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppBar,
   BottomNavigation,
@@ -29,14 +29,20 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar } from '@capacitor/status-bar';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeContext';
 import { useMedData } from '../../context/MedDataContext';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { authAPI } from '../../services/api';
+import { useSettings } from '../../context/SettingsContext';
+import { authAPI, logAPI } from '../../services/api';
 import { isNativeMobilePlatform } from '../../services/nativePlatform';
-import { syncNativeAlarmNotifications } from '../../services/reminderService';
+import {
+  DOSE_ACTIONS,
+  scheduleSnoozedReminder,
+  syncNativeAlarmNotifications,
+} from '../../services/reminderService';
 import PwaInstallPrompt from '../Common/PwaInstallPrompt';
 import AlarmNotifier from '../Alarm/AlarmNotifier';
 import OnboardingDialog from '../Onboarding/OnboardingDialog';
@@ -67,7 +73,8 @@ function AppShell() {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const { user, logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
-  const { medicines, alarms, offline, refreshing, refreshAll } = useMedData();
+  const { medicines, alarms, logs, offline, refreshing, refreshAll } = useMedData();
+  const { settings } = useSettings();
   const { shouldShowChecklist } = useOnboarding();
   const [menuAnchor, setMenuAnchor] = useState(null);
 
@@ -96,10 +103,62 @@ function AppShell() {
   }, [refreshAll]);
 
   useEffect(() => {
-    syncNativeAlarmNotifications(alarms, medicines).catch((error) => {
+    syncNativeAlarmNotifications(alarms, medicines, logs).catch((error) => {
       captureException(error, { source: 'AppShell.syncNativeAlarmNotifications' });
     });
-  }, [alarms, medicines]);
+  }, [alarms, medicines, logs]);
+
+  // The notification listener is registered once; read the latest data through a ref.
+  const latestRef = useRef({ medicines, settings, refreshAll, navigate });
+  latestRef.current = { medicines, settings, refreshAll, navigate };
+
+  useEffect(() => {
+    if (!isNativeMobilePlatform()) {
+      return undefined;
+    }
+
+    const listenerPromise = LocalNotifications.addListener(
+      'localNotificationActionPerformed',
+      async ({ actionId, notification }) => {
+        const { medicines: latestMedicines, settings: latestSettings } = latestRef.current;
+        const alarmId = notification?.extra?.alarmId;
+
+        try {
+          if (alarmId && actionId === DOSE_ACTIONS.TAKEN) {
+            await logAPI.log(alarmId, 'TAKEN');
+            trackEvent('notification_dose_taken');
+            await latestRef.current.refreshAll({ background: true });
+            return;
+          }
+
+          if (alarmId && actionId === DOSE_ACTIONS.SNOOZE) {
+            const medicine = latestMedicines.find(
+              (entry) => String(entry.id) === String(notification.extra.medicineId)
+            );
+            await logAPI.log(alarmId, 'SNOOZED');
+            await scheduleSnoozedReminder({
+              alarmId,
+              medicineId: medicine?.id,
+              medicineName: medicine?.name,
+              dosage: medicine?.dosage,
+              minutes: latestSettings.snoozeDurationMinutes,
+            });
+            trackEvent('notification_dose_snoozed', { minutes: latestSettings.snoozeDurationMinutes });
+            await latestRef.current.refreshAll({ background: true });
+            return;
+          }
+
+          latestRef.current.navigate('/');
+        } catch (error) {
+          captureException(error, { source: 'AppShell.notificationAction', actionId });
+        }
+      }
+    );
+
+    return () => {
+      listenerPromise.then((listener) => listener.remove()).catch(() => {});
+    };
+  }, []);
 
   const handleLogout = async () => {
     if (!user?.guest) {
@@ -265,6 +324,11 @@ function AppShell() {
             Sign in to sync
           </Button>
         </Box>
+      )}
+
+        >
+          Your session expired. Reminders keep working; sign in to sync changes.
+        </Alert>
       )}
 
       <Box sx={{ pb: { xs: 'calc(84px + env(safe-area-inset-bottom))', md: 4 } }}>
