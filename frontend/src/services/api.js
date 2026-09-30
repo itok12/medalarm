@@ -22,23 +22,20 @@ function normalizeApiBaseUrl(value) {
   return `${withoutTrailingSlash}/api`;
 }
 
+function isNativeRuntime() {
+  return typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+}
+
 function inferApiBaseUrl() {
   if (typeof window === 'undefined') {
     return 'http://localhost:8080/api';
   }
 
   const { hostname } = window.location;
-  const isNativePlatform = !!window.Capacitor?.isNativePlatform?.();
   const isLocalHost =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
     hostname === '0.0.0.0';
-
-  if (isNativePlatform) {
-    return process.env.NODE_ENV === 'production'
-      ? '/api'
-      : 'http://10.0.2.2:8080/api';
-  }
 
   if (isLocalHost) {
     return 'http://localhost:8080/api';
@@ -47,13 +44,27 @@ function inferApiBaseUrl() {
   return '/api';
 }
 
-function resolveApiBaseUrl() {
+export function resolveApiBaseUrl() {
+  if (isNativeRuntime()) {
+    // Inside the Capacitor WebView a relative '/api' resolves to the app's own
+    // asset server, so native builds always need an absolute backend URL.
+    if (process.env.NODE_ENV === 'production') {
+      return normalizeApiBaseUrl(process.env.REACT_APP_NATIVE_API_BASE_URL);
+    }
+    return normalizeApiBaseUrl(process.env.REACT_APP_NATIVE_API_BASE_URL || 'http://10.0.2.2:8080/api');
+  }
+
   return normalizeApiBaseUrl(
     getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferApiBaseUrl()
   );
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
+
+if (isNativeRuntime() && !/^https?:\/\//.test(API_BASE_URL)) {
+  // Build-time guard (scripts/assert-native-config.js) should make this unreachable.
+  console.error('MedAlarm: REACT_APP_NATIVE_API_BASE_URL is not set; server sync is disabled.');
+}
 
 const STORAGE_KEYS = {
   userId: 'userId',

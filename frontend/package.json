@@ -29,7 +29,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "mobile:sync": "npm run build && npx cap sync",
+    "mobile:sync": "node scripts/assert-native-config.js && npm run build && npx cap sync",
     "mobile:open:android": "npx cap open android",
     "mobile:open:ios": "npx cap open ios",
     "test": "react-scripts test",
