@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   AppBar,
   BottomNavigation,
   BottomNavigationAction,
@@ -326,6 +327,15 @@ function AppShell() {
         </Box>
       )}
 
+      {user?.sessionExpired && (
+        <Alert
+          severity="warning"
+          square
+          action={(
+            <Button color="inherit" size="small" onClick={() => navigate('/login')}>
+              Sign in
+            </Button>
+          )}
         >
           Your session expired. Reminders keep working; sign in to sync changes.
         </Alert>
