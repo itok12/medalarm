@@ -33,3 +33,14 @@ backend/.env.local
 .DS_Store
 Thumbs.db
 frontend/build
+
+# Personal agent persona/workspace files (kept locally, not part of the product)
+SOUL.md
+IDENTITY.md
+HEARTBEAT.md
+USER.md
+TOOLS.md
+.openclaw/
+
+# Local H2 database files
+backend/data/
