@@ -6,6 +6,7 @@ import com.example.medapp.dto.RegisterRequest;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.UserRepository;
 import com.example.medapp.security.JwtUtil;
+import com.example.medapp.security.LoginAttemptService;
 import com.example.medapp.service.CurrentUserService;
 import com.example.medapp.service.RefreshTokenService;
 import jakarta.validation.Valid;
@@ -34,6 +35,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final CurrentUserService currentUserService;
+    private final LoginAttemptService loginAttemptService;
     private final boolean refreshCookieSecure;
     private final String refreshCookieSameSite;
     private final long refreshTokenDays;
@@ -43,6 +45,7 @@ public class AuthController {
                           JwtUtil jwtUtil,
                           RefreshTokenService refreshTokenService,
                           CurrentUserService currentUserService,
+                          LoginAttemptService loginAttemptService,
                           @Value("${medalarm.auth.refresh-cookie.secure:false}") boolean refreshCookieSecure,
                           @Value("${medalarm.auth.refresh-cookie.same-site:Strict}") String refreshCookieSameSite,
                           @Value("${jwt.refresh-token-days:7}") long refreshTokenDays) {
@@ -51,6 +54,7 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
         this.currentUserService = currentUserService;
+        this.loginAttemptService = loginAttemptService;
         this.refreshCookieSecure = refreshCookieSecure;
         this.refreshCookieSameSite = refreshCookieSameSite;
         this.refreshTokenDays = refreshTokenDays;
@@ -83,14 +87,24 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         String identifier = req.getUsername() == null ? "" : req.getUsername().trim();
+
+        Duration locked = loginAttemptService.lockRemaining(identifier);
+        if (!locked.isZero()) {
+            long minutes = Math.max(1, locked.toMinutes() + (locked.toSecondsPart() > 0 ? 1 : 0));
+            return ResponseEntity.status(429)
+                    .body("Too many failed sign-in attempts. Try again in " + minutes + " minutes.");
+        }
+
         User user = userRepository.findByUsername(identifier)
                 .or(() -> userRepository.findByEmail(identifier))
                 .orElse(null);
 
         if (user == null || user.getPassword() == null
                 || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            loginAttemptService.recordFailure(identifier);
             return ResponseEntity.status(401).body("Invalid username or password");
         }
+        loginAttemptService.recordSuccess(identifier);
 
         String refreshToken = refreshTokenService.rotateRefreshToken(user);
         userRepository.save(user);

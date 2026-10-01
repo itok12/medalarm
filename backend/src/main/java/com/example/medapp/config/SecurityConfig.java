@@ -27,6 +27,9 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    @Value("${medalarm.rate-limit.trust-forwarded-for:false}")
+    private boolean trustForwardedFor;
+
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost,https://localhost,capacitor://localhost,http://10.0.2.2}")
     private String allowedOriginsConfig;
 
@@ -62,7 +65,7 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, accessDeniedException) ->
                     writeJsonError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
             )
-            .addFilterBefore(new RateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new RateLimitFilter(trustForwardedFor), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
