@@ -47,6 +47,7 @@ import {
 import PwaInstallPrompt from '../Common/PwaInstallPrompt';
 import AlarmNotifier from '../Alarm/AlarmNotifier';
 import OnboardingDialog from '../Onboarding/OnboardingDialog';
+import GuestImportDialog from '../Onboarding/GuestImportDialog';
 import { captureException, trackEvent } from '../../services/telemetry';
 
 const PRIMARY_NAV_ITEMS = [
@@ -379,6 +380,7 @@ function AppShell() {
 
       <AlarmNotifier alarms={alarms} medicines={medicines} />
       <OnboardingDialog />
+      <GuestImportDialog />
       <PwaInstallPrompt />
     </Box>
   );

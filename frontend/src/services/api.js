@@ -246,6 +246,11 @@ export const logAPI = {
   exportCSV: () => isGuestMode() ? guest.exportCSV() : api.get('/logs/export', { responseType: 'blob' }),
 };
 
+export const importAPI = {
+  // One all-or-nothing request with everything a guest created on this device.
+  guest: (payload) => api.post('/import/guest', payload),
+};
+
 export const userAPI = {
   getMe: () => api.get('/users/me'),
   updateMe: (data) => api.put('/users/me', data),

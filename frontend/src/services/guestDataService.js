@@ -189,6 +189,12 @@ export async function exportCSV() {
   return Promise.resolve({ data: blob });
 }
 
+// The raw on-device store, read regardless of whether guest mode is active
+// (used to move a guest's data into an account after they sign in).
+export async function getGuestSnapshot() {
+  return load();
+}
+
 export function clearGuestStore() {
   return removeValue(STORE_KEY);
 }
