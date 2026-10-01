@@ -253,11 +253,17 @@ export const userAPI = {
 };
 
 export const caregiverAPI = {
+  // As a caregiver: request access, then read logs once the patient accepts.
   addPatient: (patientUsername) =>
     api.post('/caregivers/patients', { patientUsername }),
   getPatients: () => api.get('/caregivers/patients'),
+  removePatient: (patientId) => api.delete(`/caregivers/patients/${patientId}`),
   getPatientLogs: (patientId) =>
     api.get(`/caregivers/patients/${patientId}/logs`),
+  // As a patient: who has asked for, or has, access to my history.
+  getCaregivers: () => api.get('/caregivers/caregivers'),
+  acceptCaregiver: (caregiverId) => api.post(`/caregivers/caregivers/${caregiverId}/accept`),
+  removeCaregiver: (caregiverId) => api.delete(`/caregivers/caregivers/${caregiverId}`),
 };
 
 export { clearSessionFields, getAccessToken, persistSessionFields, setAccessToken };

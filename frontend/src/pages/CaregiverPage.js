@@ -3,57 +3,83 @@ import {
   Box, Card, CardContent, Typography, TextField, Button,
   List, ListItem, ListItemText, ListItemButton, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Snackbar, Alert, CircularProgress,
+  Paper, Snackbar, Alert, CircularProgress, Chip, Stack,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import AppScreen from '../components/Layout/AppScreen';
+import { useAuth } from '../context/AuthContext';
 import { caregiverAPI } from '../services/api';
 
+const STATUS_LABEL = { PENDING: 'Waiting for approval', ACCEPTED: 'Sharing' };
+
 function CaregiverPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [patients, setPatients] = useState([]);
+  const [caregivers, setCaregivers] = useState([]);
   const [patientUsername, setPatientUsername] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patientLogs, setPatientLogs] = useState([]);
-  const [loadingPatients, setLoadingPatients] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const isGuest = !!user?.guest;
 
   const showMsg = (message, severity = 'success') =>
     setSnackbar({ open: true, message, severity });
 
-  const fetchPatients = useCallback(async () => {
-    setLoadingPatients(true);
+  const fetchLinks = useCallback(async () => {
+    if (isGuest) return;
+    setLoading(true);
     try {
-      const response = await caregiverAPI.getPatients();
-      setPatients(response.data ?? []);
+      const [patientResponse, caregiverResponse] = await Promise.all([
+        caregiverAPI.getPatients(),
+        caregiverAPI.getCaregivers(),
+      ]);
+      setPatients(patientResponse.data ?? []);
+      setCaregivers(caregiverResponse.data ?? []);
     } catch {
-      showMsg('Failed to load patients', 'error');
+      showMsg('Failed to load caregiver links', 'error');
     } finally {
-      setLoadingPatients(false);
+      setLoading(false);
     }
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => {
-    fetchPatients();
-  }, [fetchPatients]);
+    fetchLinks();
+  }, [fetchLinks]);
 
-  const handleAddPatient = async (event) => {
-    event.preventDefault();
+  const runAction = async (action, successMessage) => {
     try {
-      await caregiverAPI.addPatient(patientUsername);
-      showMsg(`Patient "${patientUsername}" added`);
-      setPatientUsername('');
-      fetchPatients();
+      await action();
+      showMsg(successMessage);
+      fetchLinks();
     } catch (error) {
-      const message = error.response?.data?.error || 'Failed to add patient';
-      showMsg(message, 'error');
+      showMsg(error.response?.data?.error || 'Something went wrong', 'error');
     }
+  };
+
+  const handleRequestAccess = async (event) => {
+    event.preventDefault();
+    const username = patientUsername.trim();
+    await runAction(
+      () => caregiverAPI.addPatient(username),
+      `Request sent. ${username} needs to approve it in their Care tab.`,
+    );
+    setPatientUsername('');
+  };
+
+  const handleRemovePatient = (patient) => {
+    if (selectedPatient?.userId === patient.userId) setSelectedPatient(null);
+    runAction(() => caregiverAPI.removePatient(patient.userId), `Removed ${patient.username}`);
   };
 
   const handleSelectPatient = async (patient) => {
     setSelectedPatient(patient);
     setLoadingLogs(true);
     try {
-      const response = await caregiverAPI.getPatientLogs(patient.id);
+      const response = await caregiverAPI.getPatientLogs(patient.userId);
       setPatientLogs(response.data ?? []);
     } catch {
       showMsg('Failed to load patient logs', 'error');
@@ -63,26 +89,113 @@ function CaregiverPage() {
     }
   };
 
+  if (isGuest) {
+    return (
+      <AppScreen
+        title="Caregiver"
+        subtitle="Share your medication history with someone you trust, or follow a family member's."
+        maxWidth={950}
+      >
+        <Card>
+          <CardContent>
+            <Typography sx={{ mb: 2 }}>
+              Caregiver sharing needs an account, so the other person can find you and you stay in control
+              of who sees your history.
+            </Typography>
+            <Button variant="contained" onClick={() => navigate('/login?sync=1')}>
+              Sign in or create an account
+            </Button>
+          </CardContent>
+        </Card>
+      </AppScreen>
+    );
+  }
+
+  const pendingRequests = caregivers.filter((link) => link.status === 'PENDING');
+  const activeCaregivers = caregivers.filter((link) => link.status === 'ACCEPTED');
+
   return (
     <AppScreen
       title="Caregiver"
-      subtitle="Link patients by username and review their adherence history with read-only access."
+      subtitle="Nothing is shared until the patient approves a request, and they can stop sharing at any time."
       maxWidth={950}
     >
       <Box>
+        {pendingRequests.length > 0 && (
+          <Card sx={{ mb: 3, borderColor: 'warning.main' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                Requests to see your history
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                If you approve, they can read your dose history (medicine names, times, taken or skipped).
+              </Typography>
+              <List dense>
+                {pendingRequests.map((link) => (
+                  <ListItem key={link.userId} disableGutters>
+                    <ListItemText primary={link.username} />
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => runAction(() => caregiverAPI.acceptCaregiver(link.userId), `${link.username} can now see your history`)}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="small"
+                        color="inherit"
+                        onClick={() => runAction(() => caregiverAPI.removeCaregiver(link.userId), 'Request declined')}
+                      >
+                        Decline
+                      </Button>
+                    </Stack>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        )}
+
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Add Patient</Typography>
-            <Box component="form" onSubmit={handleAddPatient} sx={{ display: 'flex', gap: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+              People who can see your history ({activeCaregivers.length})
+            </Typography>
+            {activeCaregivers.length === 0 ? (
+              <Typography color="text.secondary">Nobody. Your history is private.</Typography>
+            ) : (
+              <List dense>
+                {activeCaregivers.map((link) => (
+                  <ListItem key={link.userId} disableGutters>
+                    <ListItemText primary={link.username} />
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => runAction(() => caregiverAPI.removeCaregiver(link.userId), `${link.username} can no longer see your history`)}
+                    >
+                      Stop sharing
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Follow a patient</Typography>
+            <Box component="form" onSubmit={handleRequestAccess} sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="Patient Username"
+                label="Patient username"
                 value={patientUsername}
                 onChange={(event) => setPatientUsername(event.target.value)}
                 required
                 size="small"
                 sx={{ flexGrow: 1 }}
               />
-              <Button type="submit" variant="contained">Add</Button>
+              <Button type="submit" variant="contained">Send request</Button>
             </Box>
           </CardContent>
         </Card>
@@ -90,22 +203,36 @@ function CaregiverPage() {
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-              Your Patients ({patients.length})
+              Your patients ({patients.length})
             </Typography>
-            {loadingPatients ? (
+            {loading ? (
               <CircularProgress size={24} />
             ) : patients.length === 0 ? (
-              <Typography color="text.secondary">No patients added yet.</Typography>
+              <Typography color="text.secondary">No patients yet.</Typography>
             ) : (
               <List dense>
                 {patients.map((patient, index) => (
-                  <React.Fragment key={patient.id}>
-                    <ListItem disablePadding>
+                  <React.Fragment key={patient.userId}>
+                    <ListItem
+                      disablePadding
+                      secondaryAction={(
+                        <Button size="small" color="inherit" onClick={() => handleRemovePatient(patient)}>
+                          Remove
+                        </Button>
+                      )}
+                    >
                       <ListItemButton
-                        selected={selectedPatient?.id === patient.id}
+                        selected={selectedPatient?.userId === patient.userId}
+                        disabled={patient.status !== 'ACCEPTED'}
                         onClick={() => handleSelectPatient(patient)}
                       >
-                        <ListItemText primary={patient.username} secondary={patient.email || 'No email'} />
+                        <ListItemText primary={patient.username} />
+                        <Chip
+                          size="small"
+                          label={STATUS_LABEL[patient.status] || patient.status}
+                          color={patient.status === 'ACCEPTED' ? 'success' : 'default'}
+                          sx={{ mr: 9 }}
+                        />
                       </ListItemButton>
                     </ListItem>
                     {index !== patients.length - 1 && <Divider />}

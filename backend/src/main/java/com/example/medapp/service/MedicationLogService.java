@@ -1,6 +1,7 @@
 package com.example.medapp.service;
 
 import com.example.medapp.entity.Alarm;
+import com.example.medapp.entity.CaregiverStatus;
 import com.example.medapp.entity.MedicationLog;
 import com.example.medapp.entity.Medicine;
 import com.example.medapp.entity.User;
@@ -108,7 +109,9 @@ public class MedicationLogService {
     @Transactional(readOnly = true)
     public List<MedicationLog> getLogsForPatient(Long patientId) {
         Long caregiverId = currentUserService.getCurrentUserId();
-        if (!caregiverRepository.existsByCaregiverIdAndPatientId(caregiverId, patientId)) {
+        // Only an accepted link shares history; a pending request shares nothing.
+        if (!caregiverRepository.existsByCaregiver_IdAndPatient_IdAndStatus(
+                caregiverId, patientId, CaregiverStatus.ACCEPTED)) {
             throw new AccessDeniedException("Not authorized to view this patient's logs");
         }
         return medicationLogRepository.findDetailedForUser(patientId);

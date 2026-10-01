@@ -61,8 +61,9 @@ function PrivacyPage() {
             </Box>
             <Divider sx={{ mb: 2 }} />
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-              MedAlarm does not sell personal data, expose adherence history to other users by default,
-              or let caregivers edit your medicines or alarms in this version.
+              MedAlarm does not sell personal data or let caregivers edit your medicines or alarms in this
+              version. A caregiver sees your adherence history only after you approve their request, and you
+              can stop sharing at any time from the Care tab.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, mt: 1.5 }}>
               Telemetry is optional and can be enabled by the deployment owner with environment variables for Google Analytics and Sentry.
