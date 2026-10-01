@@ -160,7 +160,7 @@ export function syncNativeAlarmNotifications(alarms = [], medicines = [], logs =
   return run;
 }
 
-export async function scheduleSnoozedReminder({ alarmId, medicineId, medicineName, dosage, minutes }) {
+export async function scheduleSnoozedReminder({ alarmId, scheduledFor, medicineId, medicineName, dosage, minutes }) {
   if (!isNativeMobilePlatform()) {
     return;
   }
@@ -186,7 +186,9 @@ export async function scheduleSnoozedReminder({ alarmId, medicineId, medicineNam
         extra: {
           alarmId,
           medicineId,
-          doseDate: localDateKey(now),
+          // Snoozing keeps the original dose so Taken from the snooze answers it.
+          scheduledFor,
+          doseDate: scheduledFor ? scheduledFor.slice(0, 10) : localDateKey(now),
           kind: NOTIFICATION_KIND.SNOOZE,
         },
       }),

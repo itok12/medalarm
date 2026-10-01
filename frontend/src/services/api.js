@@ -238,7 +238,10 @@ export const alarmAPI = {
 };
 
 export const logAPI = {
-  log: (alarmId, status) => isGuestMode() ? guest.addLog(alarmId, status) : api.post('/logs', { alarmId, status }),
+  // scheduledFor identifies the dose being answered (see doseDateTimeKey).
+  log: (alarmId, status, scheduledFor) => (isGuestMode()
+    ? guest.addLog(alarmId, status, scheduledFor)
+    : api.post('/logs', { alarmId, status, scheduledFor })),
   getMine: () => isGuestMode() ? guest.getLogs() : api.get('/logs'),
   exportCSV: () => isGuestMode() ? guest.exportCSV() : api.get('/logs/export', { responseType: 'blob' }),
 };

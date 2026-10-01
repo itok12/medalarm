@@ -65,6 +65,29 @@ describe('planNotifications', () => {
     expect(notifications).toHaveLength(18);
   });
 
+  it('uses the dose a log names, even when it is logged hours early', () => {
+    // Seen on a device: Taken at 02:37 for tonight's 20:00 dose was matched to
+    // last night's (nearer) dose before logs carried scheduledFor.
+    const evening = alarm({ alarmTime: '20:00' });
+    const logs = [{
+      alarmId: 1,
+      status: 'TAKEN',
+      takenAt: at('2026-10-01T02:37').toISOString(),
+      scheduledFor: '2026-10-01T20:00:00',
+    }];
+    const { notifications } = plan({ alarms: [evening], logs, now: at('2026-10-01T02:38') });
+
+    expect(kindsFor(notifications, '2026-10-01')).toEqual([]);
+    expect(kindsFor(notifications, '2026-10-02')).toHaveLength(3);
+  });
+
+  it('puts the dose identity on every notification', () => {
+    const { notifications } = plan({ alarms: [alarm()], now: at('2026-10-01T07:00') });
+
+    expect(notifications[0].extra.scheduledFor).toBe('2026-10-01T08:00:00');
+    expect(notifications[1].extra.scheduledFor).toBe('2026-10-01T08:00:00');
+  });
+
   it('treats a skipped dose as answered but a snoozed one as still due', () => {
     const now = at('2026-10-01T08:04');
     const skipped = plan({

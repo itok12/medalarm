@@ -123,10 +123,11 @@ function AppShell() {
       async ({ actionId, notification }) => {
         const { medicines: latestMedicines, settings: latestSettings } = latestRef.current;
         const alarmId = notification?.extra?.alarmId;
+        const scheduledFor = notification?.extra?.scheduledFor;
 
         try {
           if (alarmId && actionId === DOSE_ACTIONS.TAKEN) {
-            await logAPI.log(alarmId, 'TAKEN');
+            await logAPI.log(alarmId, 'TAKEN', scheduledFor);
             trackEvent('notification_dose_taken');
             await latestRef.current.refreshAll({ background: true });
             return;
@@ -136,9 +137,10 @@ function AppShell() {
             const medicine = latestMedicines.find(
               (entry) => String(entry.id) === String(notification.extra.medicineId)
             );
-            await logAPI.log(alarmId, 'SNOOZED');
+            await logAPI.log(alarmId, 'SNOOZED', scheduledFor);
             await scheduleSnoozedReminder({
               alarmId,
+              scheduledFor,
               medicineId: medicine?.id,
               medicineName: medicine?.name,
               dosage: medicine?.dosage,

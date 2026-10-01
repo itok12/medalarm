@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "medication_log")
@@ -18,7 +20,12 @@ public class MedicationLog {
     @JsonIgnore
     private Alarm alarm;
 
+    // Stored in UTC. Exposed with an explicit offset so clients don't misread it.
+    @JsonIgnore
     private LocalDateTime takenAt;
+
+    // The dose this log answers, as wall-clock time in the user's timezone.
+    private LocalDateTime scheduledFor;
 
     private String status; // TAKEN, SKIPPED, SNOOZED
 
@@ -31,8 +38,17 @@ public class MedicationLog {
     public Alarm getAlarm() { return alarm; }
     public void setAlarm(Alarm alarm) { this.alarm = alarm; }
 
+    @JsonIgnore
     public LocalDateTime getTakenAt() { return takenAt; }
     public void setTakenAt(LocalDateTime takenAt) { this.takenAt = takenAt; }
+
+    @JsonProperty("takenAt")
+    public OffsetDateTime getTakenAtUtc() {
+        return takenAt != null ? takenAt.atOffset(ZoneOffset.UTC) : null;
+    }
+
+    public LocalDateTime getScheduledFor() { return scheduledFor; }
+    public void setScheduledFor(LocalDateTime scheduledFor) { this.scheduledFor = scheduledFor; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

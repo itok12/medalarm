@@ -37,7 +37,14 @@ import {
   syncNativeAlarmNotifications,
 } from '../services/reminderService';
 import { captureException, trackEvent } from '../services/telemetry';
-import { computeAdherenceStreak, findNextAlarm, formatTime12h, getTodaysAlarms, takenInLast7Days } from '../utils/alarmTimeline';
+import {
+  computeAdherenceStreak,
+  findNextAlarm,
+  formatTime12h,
+  getTodaysAlarms,
+  takenInLast7Days,
+  todaysDoseKey,
+} from '../utils/alarmTimeline';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -133,9 +140,9 @@ function TodayPage() {
     setSnackbar({ open: true, message, severity });
   };
 
-  const handleLog = async (alarmId, status) => {
+  const handleLog = async (alarm, status) => {
     try {
-      await logAPI.log(alarmId, status);
+      await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
       // Refreshing the logs re-runs the reminder sync, which drops this dose's nudges.
       await refreshAll({ background: true });
       trackEvent('dose_logged', { status });
@@ -149,9 +156,11 @@ function TodayPage() {
   const handleSnooze = async (alarm) => {
     const medicine = medicineById.get(alarm.medicineId);
     try {
-      await logAPI.log(alarm.id, 'SNOOZED');
+      const scheduledFor = todaysDoseKey(alarm.alarmTime);
+      await logAPI.log(alarm.id, 'SNOOZED', scheduledFor);
       await scheduleSnoozedReminder({
         alarmId: alarm.id,
+        scheduledFor,
         medicineId: alarm.medicineId,
         medicineName: medicine?.name,
         dosage: medicine?.dosage,
@@ -351,7 +360,7 @@ function TodayPage() {
                             <Button
                               variant="contained"
                               color="success"
-                              onClick={() => handleLog(alarm.id, 'TAKEN')}
+                              onClick={() => handleLog(alarm, 'TAKEN')}
                             >
                               Taken
                             </Button>
@@ -366,7 +375,7 @@ function TodayPage() {
                             <Button
                               variant="text"
                               color="inherit"
-                              onClick={() => handleLog(alarm.id, 'SKIPPED')}
+                              onClick={() => handleLog(alarm, 'SKIPPED')}
                             >
                               Skip
                             </Button>

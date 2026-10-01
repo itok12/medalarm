@@ -1,4 +1,4 @@
-import { DAYS_OF_WEEK, createAlarmDate } from './alarmTimeline';
+import { DAYS_OF_WEEK, createAlarmDate, doseDateTimeKey } from './alarmTimeline';
 
 // Pure scheduling core: decides which OS notifications should exist right now.
 // It has no side effects, so every rule here is unit-testable with a fixed clock.
@@ -53,9 +53,9 @@ export function doseKey(alarmId, doseDate) {
   return `${alarmId}|${localDateKey(doseDate)}`;
 }
 
-// A log only records when it was written, not which dose it answers, so match it
-// to the nearest scheduled time of its alarm within +/-12 h. This handles a
-// 23:00 dose logged at 00:30 the next day.
+// Logs carry the dose they answer in scheduledFor. Older logs only record when
+// they were written, so match those to the nearest scheduled time of their alarm
+// within +/-12 h (handles a 23:00 dose logged at 00:30 the next day).
 export function resolveAnsweredDoses(logs = [], alarmsById = new Map()) {
   const answered = new Set();
 
@@ -63,6 +63,11 @@ export function resolveAnsweredDoses(logs = [], alarmsById = new Map()) {
     if (log.status !== 'TAKEN' && log.status !== 'SKIPPED') return;
 
     const alarm = alarmsById.get(String(log.alarmId));
+    if (alarm && log.scheduledFor) {
+      answered.add(`${alarm.id}|${String(log.scheduledFor).slice(0, 10)}`);
+      return;
+    }
+
     const loggedAt = log.takenAt ? new Date(log.takenAt) : null;
     if (!alarm || !loggedAt || Number.isNaN(loggedAt.getTime())) return;
 
@@ -95,6 +100,7 @@ function buildNotification({ alarm, doseAt, kind, at, title, body, exact }) {
       alarmId: alarm.id,
       medicineId: alarm.medicineId,
       doseDate: localDateKey(doseAt),
+      scheduledFor: doseDateTimeKey(doseAt),
       kind,
       // Lets the reconciler detect a pending notification that is out of date.
       sig: `${at.getTime()}|${title}|${body}|${exact ? 'exact' : 'inexact'}`,

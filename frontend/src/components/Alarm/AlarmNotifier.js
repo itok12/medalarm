@@ -9,7 +9,7 @@ import {
 } from '../../utils/alarmSnoozeStorage';
 import { isNativeMobilePlatform } from '../../services/nativePlatform';
 import { captureException, trackEvent } from '../../services/telemetry';
-import { createAlarmDate, DAYS_OF_WEEK } from '../../utils/alarmTimeline';
+import { createAlarmDate, DAYS_OF_WEEK, doseDateTimeKey } from '../../utils/alarmTimeline';
 
 // Play a short attention tone using Web Audio API
 function playAlarmTone() {
@@ -37,7 +37,7 @@ const REPROMPT_MS = 15 * 60 * 1000;
 
 function AlarmNotifier({ alarms = [], medicines = [] }) {
   const { settings } = useSettings();
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', alarmId: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', alarmId: null, scheduledFor: null });
   const notifiedRef = useRef(new Set());      // keys shown at least once
   const acknowledgedRef = useRef(new Set());  // keys TAKEN or SNOOZED — no reprompt
   const shownAtRef = useRef(new Map());       // key → timestamp of last show
@@ -59,14 +59,14 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
       return undefined;
     }
 
-    const showAlarm = (key, alarmId, medicineName) => {
+    const showAlarm = (key, alarmId, medicineName, scheduledFor) => {
       const message = `Time to take: ${medicineName}`;
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('MedAlarm Reminder', { body: message });
       }
       playAlarmTone();
       shownAtRef.current.set(key, Date.now());
-      setSnackbar({ open: true, message, alarmId });
+      setSnackbar({ open: true, message, alarmId, scheduledFor: doseDateTimeKey(scheduledFor) });
     };
 
     const check = () => {
@@ -90,7 +90,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
 
         if (!notifiedRef.current.has(key)) {
           notifiedRef.current.add(key);
-          showAlarm(key, alarm.id, medicineName);
+          showAlarm(key, alarm.id, medicineName, scheduledFor);
           return;
         }
 
@@ -98,7 +98,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
         if (!acknowledgedRef.current.has(key)) {
           const shownAt = shownAtRef.current.get(key) || 0;
           if (Date.now() - shownAt >= REPROMPT_MS) {
-            showAlarm(key, alarm.id, medicineName);
+            showAlarm(key, alarm.id, medicineName, scheduledFor);
           }
         }
       });
@@ -121,7 +121,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
     if (snackbar.alarmId) {
       markAcknowledged(currentKey);
       try {
-        await logAPI.log(snackbar.alarmId, 'TAKEN');
+        await logAPI.log(snackbar.alarmId, 'TAKEN', snackbar.scheduledFor);
         trackEvent('snackbar_dose_taken');
       } catch (error) {
         captureException(error, { source: 'AlarmNotifier.handleTaken' });
@@ -140,7 +140,7 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
         return next;
       });
       try {
-        await logAPI.log(snackbar.alarmId, 'SNOOZED');
+        await logAPI.log(snackbar.alarmId, 'SNOOZED', snackbar.scheduledFor);
         trackEvent('snackbar_dose_snoozed', { minutes: settings.snoozeDurationMinutes });
       } catch (error) {
         captureException(error, { source: 'AlarmNotifier.handleSnooze' });

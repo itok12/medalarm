@@ -5,8 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 public interface MedicationLogRepository extends JpaRepository<MedicationLog, Long> {
     @Query("""
@@ -20,4 +22,7 @@ public interface MedicationLogRepository extends JpaRepository<MedicationLog, Lo
     List<MedicationLog> findDetailedForUser(@Param("userId") Long userId);
 
     List<MedicationLog> findByAlarm_IdIn(Collection<Long> alarmIds);
+
+    Optional<MedicationLog> findFirstByAlarm_IdAndScheduledForAndStatusIn(
+            Long alarmId, LocalDateTime scheduledFor, Collection<String> statuses);
 }

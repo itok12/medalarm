@@ -119,29 +119,55 @@ export async function getLogs() {
   return ok(store.logs);
 }
 
-export async function addLog(alarmId, status) {
+const ANSWER_STATUSES = ['TAKEN', 'SKIPPED'];
+
+// Mirrors MedicationLogService: entering TAKEN uses pills, leaving it returns them.
+function adjustPillCount(medicine, previousStatus, nextStatus) {
+  const wasTaken = previousStatus === 'TAKEN';
+  const isTaken = nextStatus === 'TAKEN';
+  if (wasTaken === isTaken || !medicine || medicine.pillsRemaining == null) return;
+  const perDose = medicine.pillsPerDose || 1;
+  medicine.pillsRemaining = Math.max(0, medicine.pillsRemaining + (isTaken ? -perDose : perDose));
+}
+
+export async function addLog(alarmId, status, scheduledFor = null) {
   const store = await load();
   const alarm = store.alarms.find((a) => a.id === alarmId);
   const medicine = alarm
     ? store.medicines.find((m) => m.id === alarm.medicineId)
     : null;
+  const now = new Date().toISOString();
+
+  // One answer (and one snooze) per dose, like the server's unique constraint.
+  const sameKind = ANSWER_STATUSES.includes(status) ? ANSWER_STATUSES : [status];
+  const existing = scheduledFor
+    ? store.logs.find((log) => log.alarmId === alarmId
+      && log.scheduledFor === scheduledFor
+      && sameKind.includes(log.status))
+    : null;
+
+  if (existing) {
+    if (existing.status !== status) {
+      adjustPillCount(medicine, existing.status, status);
+      existing.status = status;
+    }
+    existing.takenAt = now;
+    await save(store);
+    return ok(existing);
+  }
 
   const entry = {
     id: genId(store.logs),
     alarmId,
     medicineId: alarm?.medicineId ?? null,
     medicineName: medicine?.name ?? '',
-    takenAt: new Date().toISOString(),
+    takenAt: now,
+    scheduledFor,
     status,
   };
 
   store.logs.push(entry);
-
-  // Decrement pill supply when a dose is taken (mirrors MedicationLogService)
-  if (status === 'TAKEN' && medicine && medicine.pillsRemaining != null) {
-    const perDose = medicine.pillsPerDose || 1;
-    medicine.pillsRemaining = Math.max(0, medicine.pillsRemaining - perDose);
-  }
+  adjustPillCount(medicine, null, status);
 
   await save(store);
   return ok(entry);
