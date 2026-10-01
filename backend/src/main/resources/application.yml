@@ -16,7 +16,8 @@ spring:
     enabled: true
   h2:
     console:
-      enabled: true
+      # Local debugging only: H2_CONSOLE_ENABLED=true. Never on in production.
+      enabled: ${H2_CONSOLE_ENABLED:false}
       path: /h2-console
   servlet:
     multipart:

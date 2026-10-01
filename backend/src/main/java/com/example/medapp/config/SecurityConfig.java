@@ -53,7 +53,7 @@ public class SecurityConfig {
             .cors(c -> c.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(h -> h.frameOptions(f -> f.disable())) // H2 console
+            .headers(h -> h.frameOptions(f -> f.sameOrigin())) // H2 console (dev only) uses same-origin frames
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/h2-console/**", "/actuator/health").permitAll()
                 .requestMatchers("/api/**").authenticated()
