@@ -6,6 +6,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { logAPI } from '../../services/api';
+import { exportTextFile } from '../../services/fileExport';
+import { captureException } from '../../services/telemetry';
 import { buildAdherenceChartData } from '../../utils/adherenceChart';
 
 function AdherenceChart({ logs: providedLogs = null, loading: providedLoading = null, embedded = false }) {
@@ -30,16 +32,13 @@ function AdherenceChart({ logs: providedLogs = null, loading: providedLoading = 
   const handleExportCSV = async () => {
     try {
       const response = await logAPI.exportCSV();
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'adherence-log.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'text/csv' });
+      await exportTextFile({ filename: 'medalarm-dose-history.csv', blob, title: 'MedAlarm dose history' });
     } catch (error) {
-      console.error('Export failed:', error);
+      // Closing the share sheet without choosing an app also rejects; that isn't an error.
+      if (!/cancel/i.test(String(error?.message))) {
+        captureException(error, { source: 'AdherenceChart.exportCSV' });
+      }
     }
   };
 

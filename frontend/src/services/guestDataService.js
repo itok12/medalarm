@@ -188,14 +188,21 @@ export async function deleteLog(logId) {
 
 export async function exportCSV() {
   const store = await load();
-  const rows = ['Date,Time,Medicine,Dosage,Status'];
+  // Same columns as the server's /logs/export.
+  const rows = ['Date,Time,Scheduled,Medicine,Dosage,Status'];
+  const pad = (value) => String(value).padStart(2, '0');
+  const csv = (value) => (/[",\n]/.test(String(value ?? ''))
+    ? `"${String(value).replace(/"/g, '""')}"`
+    : String(value ?? ''));
 
   store.logs.forEach((log) => {
     const d = log.takenAt ? new Date(log.takenAt) : null;
-    const date = d ? d.toISOString().slice(0, 10) : '';
-    const time = d ? d.toTimeString().slice(0, 8) : '';
+    // Local date and time (toISOString would give the UTC date next to a local time).
+    const date = d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : '';
+    const time = d ? `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` : '';
+    const scheduled = log.scheduledFor ? String(log.scheduledFor).slice(0, 16).replace('T', ' ') : '';
     const medicine = store.medicines.find((m) => m.id === log.medicineId);
-    rows.push(`${date},${time},${medicine?.name ?? ''},${medicine?.dosage ?? ''},${log.status}`);
+    rows.push([date, time, scheduled, csv(medicine?.name ?? log.medicineName), csv(medicine?.dosage), log.status].join(','));
   });
 
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
