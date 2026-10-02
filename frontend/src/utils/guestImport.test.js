@@ -17,7 +17,9 @@ describe('buildGuestImportPayload', () => {
     const payload = buildGuestImportPayload(STORE);
 
     expect(payload.medicines).toEqual([expect.objectContaining({ id: 1, name: 'Metformin', pillsRemaining: 27, pillsPerDose: 1 })]);
-    expect(payload.alarms).toEqual([{ id: 1, medicineId: 1, alarmTime: '08:00', active: true, repeatDays: ['MONDAY'] }]);
+    expect(payload.alarms).toEqual([{
+      id: 1, medicineId: 1, alarmTime: '08:00', active: true, repeatDays: ['MONDAY'], source: 'MANUAL',
+    }]);
     expect(payload.logs).toEqual([{
       alarmId: 1, status: 'TAKEN', takenAt: '2026-09-30T07:02:00.000Z', scheduledFor: '2026-09-30T08:00:00',
     }]);

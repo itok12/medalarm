@@ -13,6 +13,11 @@ const config: CapacitorConfig = {
     allowMixedContent,
   },
   plugins: {
+    LocalNotifications: {
+      // res/drawable/ic_stat_medalarm.xml; the accent tints it in the notification shade.
+      smallIcon: 'ic_stat_medalarm',
+      iconColor: '#1565C0',
+    },
     SplashScreen: {
       launchAutoHide: false,
       showSpinner: false,

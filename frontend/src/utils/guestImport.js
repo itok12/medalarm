@@ -22,6 +22,7 @@ export function buildGuestImportPayload(store) {
       alarmTime: String(alarm.alarmTime).slice(0, 5),
       active: alarm.active !== false,
       repeatDays: alarm.repeatDays ?? [],
+      source: alarm.source === 'AUTO' ? 'AUTO' : 'MANUAL',
     }));
 
   const alarmIds = new Set(alarms.map((alarm) => alarm.id));

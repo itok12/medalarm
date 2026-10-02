@@ -91,7 +91,7 @@ public class GuestImportService {
             alarm.setAlarmTime(parseTime(item.alarmTime()));
             alarm.setActive(item.active() == null || item.active());
             alarm.setRepeatDays(parseDays(item.repeatDays()));
-            alarm.setSource(AlarmSource.MANUAL);
+            alarm.setSource("AUTO".equalsIgnoreCase(item.source()) ? AlarmSource.AUTO : AlarmSource.MANUAL);
             alarmsByGuestId.put(item.id(), alarmRepository.save(alarm));
         }
 

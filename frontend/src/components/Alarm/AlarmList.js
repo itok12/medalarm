@@ -45,6 +45,7 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Delete this alarm? Its dose history is deleted too.")) return;
     setError("");
     try {
       await alarmAPI.delete(id);
@@ -105,6 +106,7 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
                       variant="outlined"
                       color="success"
                       onClick={() => handleLog(a, "TAKEN")}
+                      aria-label={`Mark ${formatTime(a.alarmTime)} ${medName} dose as taken`}
                       sx={{ minWidth: 0, px: 1 }}
                     >
                       ✅
@@ -114,13 +116,22 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
                       variant="outlined"
                       color="warning"
                       onClick={() => handleLog(a, "SKIPPED")}
+                      aria-label={`Skip ${formatTime(a.alarmTime)} ${medName} dose`}
                       sx={{ minWidth: 0, px: 1 }}
                     >
                       ⏭
                     </Button>
-                    <Switch checked={!!a.active} onChange={() => handleToggle(a)} />
-                    <IconButton size="small" color="error" onClick={() => handleDelete(a.id)}>
-                      <DeleteIcon fontSize="small" />
+                    <Switch
+                      checked={!!a.active}
+                      onChange={() => handleToggle(a)}
+                      inputProps={{ "aria-label": `${a.active ? "Turn off" : "Turn on"} ${formatTime(a.alarmTime)} alarm for ${medName}` }}
+                    />
+                    <IconButton
+                      color="error"
+                      aria-label={`Delete ${formatTime(a.alarmTime)} alarm for ${medName}`}
+                      onClick={() => handleDelete(a.id)}
+                    >
+                      <DeleteIcon />
                     </IconButton>
                   </Box>
                 }

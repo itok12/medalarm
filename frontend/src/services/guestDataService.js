@@ -82,6 +82,7 @@ export async function generateAlarms(medicineId) {
     alarmTime: time,
     repeatDays: ALL_DAYS,
     active: true,
+    source: 'AUTO',
   }));
 
   store.alarms.push(...created);
@@ -91,7 +92,7 @@ export async function generateAlarms(medicineId) {
 
 export async function createAlarm(alarm) {
   const store = await load();
-  const created = { ...alarm, id: genId(store.alarms), active: true };
+  const created = { ...alarm, id: genId(store.alarms), active: true, source: 'MANUAL' };
   store.alarms.push(created);
   await save(store);
   return ok(created);

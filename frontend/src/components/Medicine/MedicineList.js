@@ -41,11 +41,12 @@ function MedicineList({ medicines = [], onChanged }) {
             <ListItem
               secondaryAction={(
                 <Box>
-                  <IconButton size="small" onClick={() => setEditMedicine(medicine)}>
-                    <EditIcon fontSize="small" />
+                  {/* Default size keeps a 48px touch target; labels are read by screen readers. */}
+                  <IconButton aria-label={`Edit ${medicine.name}`} onClick={() => setEditMedicine(medicine)}>
+                    <EditIcon />
                   </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(medicine.id)}>
-                    <DeleteIcon fontSize="small" />
+                  <IconButton aria-label={`Delete ${medicine.name}`} color="error" onClick={() => handleDelete(medicine.id)}>
+                    <DeleteIcon />
                   </IconButton>
                 </Box>
               )}

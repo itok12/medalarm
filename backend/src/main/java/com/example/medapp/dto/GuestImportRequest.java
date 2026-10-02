@@ -39,7 +39,8 @@ public record GuestImportRequest(
             @NotNull Long medicineId,
             @NotBlank String alarmTime,
             Boolean active,
-            Set<String> repeatDays
+            Set<String> repeatDays,
+            String source
     ) {
     }
 

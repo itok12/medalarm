@@ -79,6 +79,7 @@ function AppShell() {
   const { settings } = useSettings();
   const { shouldShowChecklist } = useOnboarding();
   const [menuAnchor, setMenuAnchor] = useState(null);
+  const [importDialogVisible, setImportDialogVisible] = useState(false);
 
   const currentPrimaryPath = useMemo(
     () => getCurrentPrimaryPath(location.pathname),
@@ -259,10 +260,19 @@ function AppShell() {
             />
           )}
 
-          <IconButton onClick={toggleMode} color="inherit">
+          <IconButton
+            onClick={toggleMode}
+            color="inherit"
+            aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
             {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
-          <IconButton color="inherit" onClick={(event) => setMenuAnchor(event.currentTarget)}>
+          <IconButton
+            color="inherit"
+            aria-label="More options"
+            aria-haspopup="menu"
+            onClick={(event) => setMenuAnchor(event.currentTarget)}
+          >
             <MoreHorizIcon />
           </IconButton>
 
@@ -379,8 +389,9 @@ function AppShell() {
       )}
 
       <AlarmNotifier alarms={alarms} medicines={medicines} />
-      <OnboardingDialog />
-      <GuestImportDialog />
+      {/* One dialog at a time: moving guest data comes before the setup tour. */}
+      <GuestImportDialog onVisibleChange={setImportDialogVisible} />
+      {!importDialogVisible && <OnboardingDialog />}
       <PwaInstallPrompt />
     </Box>
   );

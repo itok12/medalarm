@@ -114,6 +114,7 @@ function SettingsPage() {
                   control={(
                     <Switch
                       checked={settings.notificationSound}
+                      inputProps={{ 'aria-label': 'Notification sound' }}
                       onChange={(event) => updateSetting('notificationSound', event.target.checked)}
                       color="primary"
                     />
@@ -134,6 +135,7 @@ function SettingsPage() {
                   control={(
                     <Switch
                       checked={!!user?.emailRemindersEnabled}
+                      inputProps={{ 'aria-label': 'Email reminders' }}
                       onChange={(event) =>
                         saveServerSettings(
                           { emailRemindersEnabled: event.target.checked },
@@ -236,6 +238,7 @@ function SettingsPage() {
                   control={(
                     <Switch
                       checked={settings.compactView}
+                      inputProps={{ 'aria-label': 'Compact view' }}
                       onChange={(event) => updateSetting('compactView', event.target.checked)}
                       color="primary"
                     />

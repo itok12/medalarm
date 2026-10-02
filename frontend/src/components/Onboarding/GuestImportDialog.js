@@ -17,7 +17,7 @@ import { captureException, trackEvent } from '../../services/telemetry';
 
 // Shown after signing in when this device still holds data from guest mode.
 // The device copy is only cleared once the server has accepted all of it.
-function GuestImportDialog() {
+function GuestImportDialog({ onVisibleChange }) {
   const { user } = useAuth();
   const { refreshAll } = useMedData();
   const [snapshot, setSnapshot] = useState(null);
@@ -42,7 +42,14 @@ function GuestImportDialog() {
     return () => { ignore = true; };
   }, [signedIn, user?.userId]);
 
-  if (!snapshot || dismissed) {
+  const visible = !!snapshot && !dismissed;
+
+  // Lets the shell hold back other dialogs (onboarding) so they don't stack.
+  useEffect(() => {
+    onVisibleChange?.(visible);
+  }, [onVisibleChange, visible]);
+
+  if (!visible) {
     return null;
   }
 
