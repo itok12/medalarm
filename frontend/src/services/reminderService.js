@@ -92,24 +92,35 @@ export async function syncNativeAlarmNotifications(alarms = [], medicines = []) 
   }
 
   const medicineLookup = buildMedicineLookup(medicines);
-  const notifications = upcomingInstances.map(({ alarm, scheduledFor }, index) => {
+  const notifications = [];
+
+  upcomingInstances.forEach(({ alarm, scheduledFor }, index) => {
     const medicine = medicineLookup.get(alarm.medicineId);
     const medicineName = medicine?.name || 'your medicine';
+    const mainId = alarm.id * 100 + index + 1;
 
-    return {
-      id: alarm.id * 100 + index + 1,
+    // Main notification
+    notifications.push({
+      id: mainId,
       title: `Time to take ${medicineName}`,
       body: medicine?.dosage ? `Dose: ${medicine.dosage}` : 'Open MedAlarm to mark this dose.',
-      schedule: {
-        at: scheduledFor,
-        allowWhileIdle: true,
-      },
+      schedule: { at: scheduledFor, allowWhileIdle: true },
       channelId: CHANNEL_ID,
-      extra: {
-        alarmId: alarm.id,
-        medicineId: alarm.medicineId,
-      },
-    };
+      extra: { alarmId: alarm.id, medicineId: alarm.medicineId, nudge: false },
+    });
+
+    // Follow-up nudges at +15 min and +30 min (persistent alarm behaviour)
+    [15, 30].forEach((offsetMinutes, nudgeIndex) => {
+      const nudgeAt = new Date(scheduledFor.getTime() + offsetMinutes * 60000);
+      notifications.push({
+        id: mainId + (nudgeIndex + 1) * 10000,
+        title: `Reminder: ${medicineName}`,
+        body: 'Have you taken your dose? Tap to log it.',
+        schedule: { at: nudgeAt, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+        extra: { alarmId: alarm.id, medicineId: alarm.medicineId, nudge: true },
+      });
+    });
   });
 
   if (notifications.length) {
@@ -117,6 +128,25 @@ export async function syncNativeAlarmNotifications(alarms = [], medicines = []) 
   }
 
   await setJson(REMINDER_SYNC_KEY, nextFingerprint);
+}
+
+/**
+ * Cancel all pending notifications (main + nudges) for a specific alarm.
+ * Call this after the user logs TAKEN or SKIPPED so nudges don't fire.
+ */
+export async function cancelNudgesForAlarm(alarmId) {
+  if (!isNativeMobilePlatform()) return;
+  try {
+    const pending = await LocalNotifications.getPending();
+    const toCancel = (pending.notifications || [])
+      .filter((n) => n.extra?.alarmId === alarmId)
+      .map((n) => ({ id: n.id }));
+    if (toCancel.length) {
+      await LocalNotifications.cancel({ notifications: toCancel });
+    }
+  } catch {
+    // Ignore — cancellation is best-effort
+  }
 }
 
 export async function scheduleSnoozedReminder({ alarmId, medicineName, dosage, minutes }) {

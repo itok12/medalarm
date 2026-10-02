@@ -17,6 +17,8 @@ public class CreateMedicineRequest {
     @NotNull
     private LocalDate startDate;
     private LocalDate endDate;
+    private Integer pillsRemaining;
+    private Integer pillsPerDose;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -38,4 +40,10 @@ public class CreateMedicineRequest {
 
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+    public Integer getPillsRemaining() { return pillsRemaining; }
+    public void setPillsRemaining(Integer pillsRemaining) { this.pillsRemaining = pillsRemaining; }
+
+    public Integer getPillsPerDose() { return pillsPerDose; }
+    public void setPillsPerDose(Integer pillsPerDose) { this.pillsPerDose = pillsPerDose; }
 }

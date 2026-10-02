@@ -14,6 +14,7 @@
     "@capacitor/status-bar": "^8.0.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
+    "@fontsource/manrope": "^5.3.0",
     "@mui/icons-material": "^5.15.14",
     "@mui/material": "^5.15.14",
     "@sentry/react": "^10.46.0",
@@ -23,13 +24,12 @@
     "react-router-dom": "^6.22.3",
     "react-scripts": "5.0.1",
     "recharts": "^2.15.4",
-    "web-vitals": "^2.1.4",
     "yaml": "^2.8.3"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "mobile:sync": "npm run build && npx cap sync",
+    "mobile:sync": "node scripts/assert-native-config.js && npm run build && npx cap sync",
     "mobile:open:android": "npx cap open android",
     "mobile:open:ios": "npx cap open ios",
     "test": "react-scripts test",

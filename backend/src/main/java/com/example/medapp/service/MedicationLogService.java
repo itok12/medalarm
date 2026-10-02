@@ -5,6 +5,7 @@ import com.example.medapp.entity.MedicationLog;
 import com.example.medapp.repository.AlarmRepository;
 import com.example.medapp.repository.CaregiverRepository;
 import com.example.medapp.repository.MedicationLogRepository;
+import com.example.medapp.repository.MedicineRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,17 +23,20 @@ public class MedicationLogService {
     private final MedicationLogRepository medicationLogRepository;
     private final AlarmRepository alarmRepository;
     private final CaregiverRepository caregiverRepository;
+    private final MedicineRepository medicineRepository;
     private final CurrentUserService currentUserService;
 
     public MedicationLogService(
             MedicationLogRepository medicationLogRepository,
             AlarmRepository alarmRepository,
             CaregiverRepository caregiverRepository,
+            MedicineRepository medicineRepository,
             CurrentUserService currentUserService
     ) {
         this.medicationLogRepository = medicationLogRepository;
         this.alarmRepository = alarmRepository;
         this.caregiverRepository = caregiverRepository;
+        this.medicineRepository = medicineRepository;
         this.currentUserService = currentUserService;
     }
 
@@ -50,7 +54,21 @@ public class MedicationLogService {
         log.setAlarm(alarm);
         log.setTakenAt(LocalDateTime.now());
         log.setStatus(normalizedStatus);
-        return medicationLogRepository.save(log);
+        MedicationLog saved = medicationLogRepository.save(log);
+
+        // Decrement pill supply when a dose is taken
+        if ("TAKEN".equals(normalizedStatus)) {
+            Long medicineId = alarm.getMedicine().getId();
+            medicineRepository.findById(medicineId).ifPresent(medicine -> {
+                if (medicine.getPillsRemaining() != null && medicine.getPillsRemaining() > 0) {
+                    int perDose = medicine.getPillsPerDose() != null ? medicine.getPillsPerDose() : 1;
+                    medicine.setPillsRemaining(Math.max(0, medicine.getPillsRemaining() - perDose));
+                    medicineRepository.save(medicine);
+                }
+            });
+        }
+
+        return saved;
     }
 
     @Transactional(readOnly = true)

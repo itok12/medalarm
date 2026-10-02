@@ -29,6 +29,7 @@ import { useMedData } from '../context/MedDataContext';
 import { useSettings } from '../context/SettingsContext';
 import { logAPI } from '../services/api';
 import {
+  cancelNudgesForAlarm,
   getReminderPermissionStatus,
   requestReminderPermission,
   scheduleSnoozedReminder,
@@ -101,6 +102,15 @@ function TodayPage() {
   const takenThisWeek = useMemo(() => takenInLast7Days(logs), [logs]);
   const streak = useMemo(() => computeAdherenceStreak(logs), [logs]);
 
+  const lowStockMedicines = useMemo(() => medicines.filter((med) => {
+    if (med.pillsRemaining == null) return false;
+    const dosesPerDay = {
+      'Once daily': 1, 'Twice daily': 2, 'Three times daily': 3, 'Four times daily': 4,
+    }[med.frequency] || 1;
+    const perDose = med.pillsPerDose || 1;
+    return med.pillsRemaining <= perDose * dosesPerDay * 7;
+  }), [medicines]);
+
   useEffect(() => {
     getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
   }, []);
@@ -112,6 +122,7 @@ function TodayPage() {
   const handleLog = async (alarmId, status) => {
     try {
       await logAPI.log(alarmId, status);
+      cancelNudgesForAlarm(alarmId).catch(() => {});
       await refreshAll({ background: true });
       trackEvent('dose_logged', { status });
       showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.');
@@ -157,6 +168,13 @@ function TodayPage() {
     >
       <Stack spacing={3}>
         {error && <Alert severity="error">{error}</Alert>}
+
+        {lowStockMedicines.length > 0 && (
+          <Alert severity="warning" sx={{ borderRadius: 3 }}>
+            <strong>Refill soon:</strong>{' '}
+            {lowStockMedicines.map((m) => `${m.name} (${m.pillsRemaining} pills left)`).join(', ')}
+          </Alert>
+        )}
 
         <OnboardingChecklistCard />
 

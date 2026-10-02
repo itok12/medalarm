@@ -1,0 +1,2 @@
+ALTER TABLE medicine ADD COLUMN pills_remaining INTEGER;
+ALTER TABLE medicine ADD COLUMN pills_per_dose INTEGER NOT NULL DEFAULT 1;
