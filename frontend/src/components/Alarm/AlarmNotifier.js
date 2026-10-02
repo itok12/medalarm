@@ -8,7 +8,6 @@ import {
   readStoredSnoozes,
 } from '../../utils/alarmSnoozeStorage';
 import { isNativeMobilePlatform } from '../../services/nativePlatform';
-import { cancelNudgesForAlarm, scheduleSnoozedReminder } from '../../services/reminderService';
 import { captureException, trackEvent } from '../../services/telemetry';
 import { createAlarmDate, DAYS_OF_WEEK } from '../../utils/alarmTimeline';
 
@@ -123,7 +122,6 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
       markAcknowledged(currentKey);
       try {
         await logAPI.log(snackbar.alarmId, 'TAKEN');
-        await cancelNudgesForAlarm(snackbar.alarmId);
         trackEvent('snackbar_dose_taken');
       } catch (error) {
         captureException(error, { source: 'AlarmNotifier.handleTaken' });
@@ -134,8 +132,6 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
 
   const handleSnooze = async () => {
     if (snackbar.alarmId) {
-      const alarm = alarms.find((entry) => entry.id === snackbar.alarmId);
-      const medicineName = alarm ? medNameById.get(alarm.medicineId) : 'your medicine';
       const snoozeUntil = Date.now() + settings.snoozeDurationMinutes * 60000;
       markAcknowledged(currentKey);
       setSnoozed((prev) => {
@@ -146,13 +142,6 @@ function AlarmNotifier({ alarms = [], medicines = [] }) {
       try {
         await logAPI.log(snackbar.alarmId, 'SNOOZED');
         trackEvent('snackbar_dose_snoozed', { minutes: settings.snoozeDurationMinutes });
-        if (alarm) {
-          await scheduleSnoozedReminder({
-            alarmId: alarm.id,
-            medicineName,
-            minutes: settings.snoozeDurationMinutes,
-          });
-        }
       } catch (error) {
         captureException(error, { source: 'AlarmNotifier.handleSnooze' });
       }

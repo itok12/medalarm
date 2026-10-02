@@ -200,8 +200,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        clearSessionFields();
-        // Do not redirect — AuthContext handles session state
+        // Drop only the access token. Keeping the stored identity means a failed
+        // refresh (offline, server asleep) never turns a signed-in user into a
+        // guest and wipes their cached schedule and reminders. AuthContext
+        // decides when a session has really expired.
+        setAccessToken(null);
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
