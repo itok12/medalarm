@@ -1,5 +1,11 @@
 import axios from 'axios';
 import * as guest from './guestDataService';
+import {
+  CLIENT_HEADER,
+  clearNativeRefreshToken,
+  getNativeRefreshToken,
+  saveNativeRefreshToken,
+} from './nativeSession';
 
 function isGuestMode() {
   try { return localStorage.getItem('medalarm-guest') === 'true'; } catch { return false; }
@@ -117,12 +123,26 @@ function clearSessionFields() {
   LEGACY_TOKEN_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
+// Native apps ask the server to return the refresh token in the body (see nativeSession.js).
+const BASE_HEADERS = {
+  'Content-Type': 'application/json',
+  ...(isNativeRuntime() ? { [CLIENT_HEADER]: 'native' } : {}),
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   // Render free instances can take tens of seconds to wake up after inactivity.
   timeout: 65000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: BASE_HEADERS,
   withCredentials: true,
+});
+
+// Login and register responses carry the refresh token for native clients.
+api.interceptors.response.use(async (response) => {
+  if (response.data?.refreshToken) {
+    await saveNativeRefreshToken(response.data.refreshToken);
+  }
+  return response;
 });
 
 api.interceptors.request.use((config) => {
@@ -150,13 +170,14 @@ const processQueue = (error, token = null) => {
 
 const requestTokenRefresh = () => {
   if (!refreshPromise) {
-    refreshPromise = axios
-      .post(`${API_BASE_URL}/auth/refresh`, {}, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 65000,
-        withCredentials: true,
-      })
-      .then((response) => {
+    refreshPromise = getNativeRefreshToken()
+      .then((refreshToken) => axios.post(
+        `${API_BASE_URL}/auth/refresh`,
+        refreshToken ? { refreshToken } : {},
+        { headers: BASE_HEADERS, timeout: 65000, withCredentials: true },
+      ))
+      .then(async (response) => {
+        await saveNativeRefreshToken(response.data?.refreshToken);
         persistSessionFields(response.data);
         return response;
       })
@@ -219,7 +240,14 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
   refresh: () => requestTokenRefresh(),
-  logout: () => api.post('/auth/logout'),
+  logout: async () => {
+    const refreshToken = await getNativeRefreshToken();
+    try {
+      return await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
+    } finally {
+      await clearNativeRefreshToken();
+    }
+  },
 };
 
 export const medicineAPI = {

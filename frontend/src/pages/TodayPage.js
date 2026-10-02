@@ -201,7 +201,8 @@ function TodayPage() {
       subtitle="Your next doses, quick actions, and reminder status all live here."
     >
       <Stack spacing={3}>
-        {error && <Alert severity="error">{error}</Alert>}
+        {/* An expired session already has its own banner; don't blame the connection. */}
+        {error && !user?.sessionExpired && <Alert severity="error">{error}</Alert>}
 
         {lowStockMedicines.length > 0 && (
           <Alert severity="warning" sx={{ borderRadius: 3 }}>

@@ -29,6 +29,9 @@ import java.util.Map;
 public class AuthController {
 
     private static final String REFRESH_COOKIE_NAME = "medalarm_refresh";
+    // Native apps send this header and receive the refresh token in the body.
+    static final String CLIENT_HEADER = "X-MedAlarm-Client";
+    private static final String NATIVE_CLIENT = "native";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -61,7 +64,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req,
+                                      @RequestHeader(value = CLIENT_HEADER, required = false) String client) {
         if (userRepository.existsByUsername(req.getUsername())) {
             return ResponseEntity.badRequest().body("Username already taken");
         }
@@ -81,11 +85,12 @@ public class AuthController {
         User saved = userRepository.save(user);
 
         String token = jwtUtil.generateToken(saved.getUsername());
-        return authResponse(saved, token, refreshToken);
+        return authResponse(saved, token, refreshToken, client);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req,
+                                   @RequestHeader(value = CLIENT_HEADER, required = false) String client) {
         String identifier = req.getUsername() == null ? "" : req.getUsername().trim();
 
         Duration locked = loginAttemptService.lockRemaining(identifier);
@@ -110,12 +115,13 @@ public class AuthController {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
-        return authResponse(user, token, refreshToken);
+        return authResponse(user, token, refreshToken, client);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
             @RequestBody(required = false) Map<String, String> body,
+            @RequestHeader(value = CLIENT_HEADER, required = false) String client,
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshCookie
     ) {
         String refreshToken = body != null ? body.get("refreshToken") : null;
@@ -135,14 +141,16 @@ public class AuthController {
         String newRefreshToken = refreshTokenService.rotateRefreshToken(user);
         userRepository.save(user);
         String newToken = jwtUtil.generateToken(user.getUsername());
-        return authResponse(user, newToken, newRefreshToken);
+        return authResponse(user, newToken, newRefreshToken, client);
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
+            @RequestBody(required = false) Map<String, String> body,
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshCookie
     ) {
-        User user = resolveLogoutUser(refreshCookie);
+        String bodyToken = body != null ? body.get("refreshToken") : null;
+        User user = resolveLogoutUser(bodyToken != null && !bodyToken.isBlank() ? bodyToken : refreshCookie);
         if (user != null) {
             refreshTokenService.clear(user);
             userRepository.save(user);
@@ -152,10 +160,14 @@ public class AuthController {
                 .body(Map.of("message", "Logged out"));
     }
 
-    private ResponseEntity<AuthResponse> authResponse(User user, String accessToken, String refreshToken) {
+    private ResponseEntity<AuthResponse> authResponse(User user, String accessToken, String refreshToken, String client) {
+        AuthResponse body = buildAuthResponse(user, accessToken);
+        if (NATIVE_CLIENT.equalsIgnoreCase(client)) {
+            body.setRefreshToken(refreshToken);
+        }
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken).toString())
-                .body(buildAuthResponse(user, accessToken));
+                .body(body);
     }
 
     private AuthResponse buildAuthResponse(User user, String accessToken) {

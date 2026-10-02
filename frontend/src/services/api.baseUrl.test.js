@@ -4,6 +4,13 @@ jest.mock('axios', () => ({
   post: jest.fn(),
 }));
 jest.mock('./guestDataService', () => ({}));
+// Importing @capacitor/core would replace the window.Capacitor stub below.
+jest.mock('./nativeSession', () => ({
+  CLIENT_HEADER: 'X-MedAlarm-Client',
+  clearNativeRefreshToken: async () => {},
+  getNativeRefreshToken: async () => null,
+  saveNativeRefreshToken: async () => {},
+}));
 
 const ORIGINAL_ENV = process.env;
 

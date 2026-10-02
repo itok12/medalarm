@@ -10,6 +10,7 @@ import {
   readStoredUser,
 } from '../utils/authSession';
 import { authAPI, setAccessToken } from '../services/api';
+import { clearNativeRefreshToken } from '../services/nativeSession';
 import { setTelemetryUser } from '../services/telemetry';
 
 const AuthContext = createContext(null);
@@ -112,6 +113,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setAccessToken(null);
+    clearNativeRefreshToken().catch(() => {});
     clearStoredUser();
     // Fall back to on-device guest mode rather than a user-less shell.
     persistGuest();
