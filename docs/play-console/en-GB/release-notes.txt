@@ -1,3 +1,8 @@
-First Android release of MedAlarm.
-
-Includes native medicine reminders, adherence logging, caregiver read-only history, onboarding, and a mobile-first Today screen.
+- Use MedAlarm without an account; move your data into an account later in one tap
+- Mark doses Taken or Snooze them from the notification
+- Today shows which doses you've taken, with Undo
+- New Reminder health check in Settings, with a test reminder
+- More reliable reminders, including after restarts and when the phone is asleep
+- Caregivers now need your approval before they can see anything
+- Export your dose history from the History screen
+- Better support for large text and screen readers

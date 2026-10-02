@@ -1,14 +1,19 @@
-MedAlarm is a medication reminder and adherence tracking app built for everyday routines.
+MedAlarm reminds you to take your medicines and keeps a simple record of every dose.
 
-Set up medicines, generate reminders from your schedule, and log doses as taken, skipped, or snoozed in seconds.
+Start straight away, no account needed: in guest mode everything stays on your phone. Create a free account later if you want your medicines to sync, and bring your saved data with you in one tap.
 
-MedAlarm helps you:
-- manage medicines with start and end dates
-- generate reminders from your routine
-- review adherence history over time
-- use a focused Today screen with quick actions
-- share read-only adherence visibility with linked caregivers
+What MedAlarm does:
+- Reminds you at each dose time, then nudges you again 15 and 30 minutes later if you haven't logged it
+- Lets you mark a dose Taken or Snooze it right from the notification
+- Shows today's doses at a glance, with what you've already taken and an Undo if you tap by mistake
+- Counts your pills and warns you before you run out
+- Keeps your dose history, which you can export as a CSV file to share with your doctor or pharmacist
+- Lets a family member or carer follow your doses, only after you approve their request, and you can stop sharing at any time
+- Checks your phone's settings and tells you what to fix so reminders arrive on time, with a test reminder to prove it
+- Works with large text sizes and screen readers
 
-The Android app uses native local notifications for reliable reminders, while the web app stays installable as a PWA.
+Your privacy: guest data never leaves your phone. With an account, your medicines are stored only with your explicit consent, never sold, and never used for advertising. You can delete your account and all of its data from inside the app.
 
-MedAlarm is not a medical device and does not provide diagnosis, treatment recommendations, or professional medical advice. Always follow the guidance of your doctor, pharmacist, or other qualified healthcare professional.
+For on-time reminders, allow "Alarms & reminders" when MedAlarm asks. Without it, Android may deliver reminders late.
+
+MedAlarm is a reminder tool, not a medical device, and does not give medical advice. Always follow your doctor or pharmacist's instructions. Don't rely on MedAlarm alone for medicines where a missed or late dose is dangerous.

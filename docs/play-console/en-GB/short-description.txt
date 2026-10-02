@@ -1,1 +1,1 @@
-Medicine reminders, dose logging, and adherence history for daily routines.
+Medicine reminders that work without an account. Log doses, track refills.
