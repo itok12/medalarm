@@ -105,6 +105,7 @@ export function AuthProvider({ children }) {
         emailRemindersEnabled:
           profilePayload.emailRemindersEnabled ?? prev.emailRemindersEnabled,
         defaultAlarmTime: normalizeTime(profilePayload.defaultAlarmTime ?? prev.defaultAlarmTime),
+        healthDataConsentAt: profilePayload.healthDataConsentAt ?? prev.healthDataConsentAt,
       };
       persistUser(nextUser);
       return nextUser;

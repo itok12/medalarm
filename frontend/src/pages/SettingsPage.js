@@ -14,6 +14,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PublicIcon from '@mui/icons-material/Public';
 import AppScreen from '../components/Layout/AppScreen';
 import ReminderHealthCard from '../components/Common/ReminderHealthCard';
+import { MedicalDisclaimer } from '../components/Common/HealthDataConsent';
 import { useSettings } from '../context/SettingsContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -205,6 +206,8 @@ function SettingsPage() {
               />
             </Box>
           </SettingSection>
+
+          <MedicalDisclaimer sx={{ mb: 2 }} />
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
             <Button

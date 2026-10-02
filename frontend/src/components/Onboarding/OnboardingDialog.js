@@ -31,6 +31,7 @@ import {
   syncNativeAlarmNotifications,
 } from '../../services/reminderService';
 import { trackEvent } from '../../services/telemetry';
+import { MedicalDisclaimer } from '../Common/HealthDataConsent';
 
 const STEP_TITLES = ['Welcome', 'Preferences', 'Reminders', 'First medicine'];
 
@@ -91,6 +92,7 @@ function OnboardingDialog() {
               This quick setup keeps the Today screen useful, makes native notifications reliable,
               and gives the app the information it needs to generate better schedules.
             </Typography>
+            <MedicalDisclaimer />
           </Stack>
         );
       case 1:

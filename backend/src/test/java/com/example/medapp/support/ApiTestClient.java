@@ -40,6 +40,7 @@ public class ApiTestClient {
                         .content(json(Map.of(
                                 "username", username,
                                 "password", "password123",
+                                "healthDataConsent", "true",
                                 "email", username + "@example.com",
                                 "timezone", "Europe/London"))))
                 .andExpect(status().isOk())

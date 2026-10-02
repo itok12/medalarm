@@ -34,6 +34,7 @@ class AuthControllerTest {
         Map<String, String> request = Map.of(
                 "username", "testuser",
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "testuser@example.com",
                 "timezone", "Europe/London"
         );
@@ -54,6 +55,7 @@ class AuthControllerTest {
         Map<String, String> request = Map.of(
                 "username", "dupuser",
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "dupuser1@example.com"
         );
 
@@ -65,6 +67,7 @@ class AuthControllerTest {
         Map<String, String> duplicate = Map.of(
                 "username", "dupuser",
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "dupuser2@example.com"
         );
 
@@ -79,6 +82,7 @@ class AuthControllerTest {
         Map<String, String> registration = Map.of(
                 "username", "loginuser",
                 "password", "mypassword",
+                "healthDataConsent", "true",
                 "email", "loginuser@example.com"
         );
         mockMvc.perform(post("/api/auth/register")
@@ -104,6 +108,7 @@ class AuthControllerTest {
         Map<String, String> registration = Map.of(
                 "username", "wrongpwuser",
                 "password", "correctpass",
+                "healthDataConsent", "true",
                 "email", "wrongpwuser@example.com"
         );
         mockMvc.perform(post("/api/auth/register")
@@ -126,6 +131,7 @@ class AuthControllerTest {
         Map<String, String> registration = Map.of(
                 "username", "refreshuser",
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "refreshuser@example.com"
         );
         Cookie refreshCookie = mockMvc.perform(post("/api/auth/register")
@@ -148,6 +154,7 @@ class AuthControllerTest {
         Map<String, String> registration = Map.of(
                 "username", "logoutuser",
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "logoutuser@example.com"
         );
         var registerResult = mockMvc.perform(post("/api/auth/register")

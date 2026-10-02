@@ -48,6 +48,7 @@ import PwaInstallPrompt from '../Common/PwaInstallPrompt';
 import AlarmNotifier from '../Alarm/AlarmNotifier';
 import OnboardingDialog from '../Onboarding/OnboardingDialog';
 import GuestImportDialog from '../Onboarding/GuestImportDialog';
+import HealthDataConsentDialog from '../Onboarding/HealthDataConsentDialog';
 import useLargeText from '../../hooks/useLargeText';
 import { captureException, trackEvent } from '../../services/telemetry';
 
@@ -82,6 +83,7 @@ function AppShell() {
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [importDialogVisible, setImportDialogVisible] = useState(false);
   const largeText = useLargeText();
+  const needsConsent = !!user && !user.guest && !user.sessionExpired && !user.healthDataConsentAt;
 
   const currentPrimaryPath = useMemo(
     () => getCurrentPrimaryPath(location.pathname),
@@ -396,9 +398,15 @@ function AppShell() {
       )}
 
       <AlarmNotifier alarms={alarms} medicines={medicines} />
-      {/* One dialog at a time: moving guest data comes before the setup tour. */}
-      <GuestImportDialog onVisibleChange={setImportDialogVisible} />
-      {!importDialogVisible && <OnboardingDialog />}
+      {/* One dialog at a time: consent first, then moving guest data, then the setup tour. */}
+      {needsConsent ? (
+        <HealthDataConsentDialog />
+      ) : (
+        <>
+          <GuestImportDialog onVisibleChange={setImportDialogVisible} />
+          {!importDialogVisible && <OnboardingDialog />}
+        </>
+      )}
       <PwaInstallPrompt />
     </Box>
   );

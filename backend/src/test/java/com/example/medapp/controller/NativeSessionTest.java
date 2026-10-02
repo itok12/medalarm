@@ -34,7 +34,8 @@ class NativeSessionTest {
 
     private Map<String, String> registration() {
         String username = "native-" + UUID.randomUUID().toString().substring(0, 8);
-        return Map.of("username", username, "password", "password123", "email", username + "@example.com");
+        return Map.of("username", username, "password", "password123", "email", username + "@example.com",
+                "healthDataConsent", "true");
     }
 
     @SuppressWarnings("unchecked")

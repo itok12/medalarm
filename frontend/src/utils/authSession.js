@@ -5,6 +5,7 @@ export const AUTH_STORAGE_KEYS = {
   timezone: 'timezone',
   emailRemindersEnabled: 'emailRemindersEnabled',
   defaultAlarmTime: 'defaultAlarmTime',
+  healthDataConsentAt: 'healthDataConsentAt',
 };
 
 const LEGACY_TOKEN_STORAGE_KEYS = ['token', 'refreshToken'];
@@ -33,6 +34,7 @@ export function readStoredUser() {
     emailRemindersEnabled:
       localStorage.getItem(AUTH_STORAGE_KEYS.emailRemindersEnabled) === 'true',
     defaultAlarmTime: normalizeTime(localStorage.getItem(AUTH_STORAGE_KEYS.defaultAlarmTime)),
+    healthDataConsentAt: localStorage.getItem(AUTH_STORAGE_KEYS.healthDataConsentAt) || null,
   };
 }
 
@@ -50,6 +52,11 @@ export function persistUser(user) {
     AUTH_STORAGE_KEYS.defaultAlarmTime,
     normalizeTime(user.defaultAlarmTime),
   );
+  if (user.healthDataConsentAt) {
+    localStorage.setItem(AUTH_STORAGE_KEYS.healthDataConsentAt, user.healthDataConsentAt);
+  } else {
+    localStorage.removeItem(AUTH_STORAGE_KEYS.healthDataConsentAt);
+  }
 }
 
 export function clearStoredUser() {
@@ -80,5 +87,6 @@ export function normalizeSession(data) {
     timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     emailRemindersEnabled: !!data.emailRemindersEnabled,
     defaultAlarmTime: normalizeTime(data.defaultAlarmTime),
+    healthDataConsentAt: data.healthDataConsentAt || null,
   };
 }

@@ -14,6 +14,7 @@ public class AuthResponse {
     // keep the HttpOnly cookie so the token is never readable by page scripts.
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String refreshToken;
+    private String healthDataConsentAt;
 
     public AuthResponse(String token, Long userId, String username) {
         this.token = token;
@@ -41,6 +42,8 @@ public class AuthResponse {
 
     public String getToken() { return token; }
     public String getRefreshToken() { return refreshToken; }
+    public String getHealthDataConsentAt() { return healthDataConsentAt; }
+    public void setHealthDataConsentAt(String healthDataConsentAt) { this.healthDataConsentAt = healthDataConsentAt; }
     public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
     public Long getUserId() { return userId; }
     public String getUsername() { return username; }

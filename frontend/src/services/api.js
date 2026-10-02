@@ -283,6 +283,7 @@ export const importAPI = {
 
 export const userAPI = {
   getMe: () => api.get('/users/me'),
+  giveHealthDataConsent: () => api.post('/users/me/health-data-consent'),
   updateMe: (data) => api.put('/users/me', data),
   deleteMe: (data) => api.delete('/users/me', { data }),
 };

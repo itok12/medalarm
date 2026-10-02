@@ -45,6 +45,7 @@ class UserControllerTest {
         Map<String, String> victimRegistration = Map.of(
                 "username", "deleteuser-" + suffix,
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "delete-" + suffix + "@example.com"
         );
         String victimBody = mockMvc.perform(post("/api/auth/register")
@@ -72,6 +73,7 @@ class UserControllerTest {
         Map<String, String> caregiverRegistration = Map.of(
                 "username", "caregiver-" + suffix,
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "caregiver-" + suffix + "@example.com"
         );
         String caregiverBody = mockMvc.perform(post("/api/auth/register")

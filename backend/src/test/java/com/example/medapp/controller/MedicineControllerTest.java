@@ -39,6 +39,7 @@ class MedicineControllerTest {
         Map<String, String> registration = Map.of(
                 "username", "medtestuser-" + suffix,
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "medtest-" + suffix + "@example.com"
         );
         String body = mockMvc.perform(post("/api/auth/register")
@@ -115,6 +116,7 @@ class MedicineControllerTest {
         Map<String, String> secondRegistration = Map.of(
                 "username", "seconduser-" + UUID.randomUUID(),
                 "password", "password123",
+                "healthDataConsent", "true",
                 "email", "second-" + UUID.randomUUID() + "@example.com"
         );
         String secondBody = mockMvc.perform(post("/api/auth/register")

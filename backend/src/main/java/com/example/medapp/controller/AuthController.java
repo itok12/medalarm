@@ -79,6 +79,7 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setTimezone(resolveTimezone(req.getTimezone()));
         user.setDefaultAlarmTime(LocalTime.of(8, 0));
+        user.recordHealthDataConsent(LocalDateTime.now());
 
         String refreshToken = refreshTokenService.rotateRefreshToken(user);
 
@@ -162,6 +163,9 @@ public class AuthController {
 
     private ResponseEntity<AuthResponse> authResponse(User user, String accessToken, String refreshToken, String client) {
         AuthResponse body = buildAuthResponse(user, accessToken);
+        if (user.getHealthDataConsentAt() != null) {
+            body.setHealthDataConsentAt(user.getHealthDataConsentAt().toString());
+        }
         if (NATIVE_CLIENT.equalsIgnoreCase(client)) {
             body.setRefreshToken(refreshToken);
         }

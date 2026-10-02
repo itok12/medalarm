@@ -3,6 +3,7 @@ package com.example.medapp.controller;
 import com.example.medapp.dto.DeleteAccountRequest;
 import com.example.medapp.dto.UpdateProfileRequest;
 import com.example.medapp.dto.UserProfileResponse;
+import com.example.medapp.entity.HealthDataConsent;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.UserRepository;
 import com.example.medapp.service.AccountDeletionService;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 
@@ -39,6 +41,18 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getCurrentUser() {
         return ResponseEntity.ok(new UserProfileResponse(currentUserService.getCurrentUser()));
+    }
+
+    /** Records explicit consent for accounts created before consent was asked at sign-up. */
+    @PostMapping("/me/health-data-consent")
+    public ResponseEntity<UserProfileResponse> giveHealthDataConsent() {
+        User user = currentUserService.getCurrentUser();
+        if (user.getHealthDataConsentAt() == null
+                || !HealthDataConsent.CURRENT_VERSION.equals(user.getHealthDataConsentVersion())) {
+            user.recordHealthDataConsent(LocalDateTime.now());
+            user = userRepository.save(user);
+        }
+        return ResponseEntity.ok(new UserProfileResponse(user));
     }
 
     @PutMapping("/me")
