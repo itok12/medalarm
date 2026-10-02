@@ -48,6 +48,7 @@ import PwaInstallPrompt from '../Common/PwaInstallPrompt';
 import AlarmNotifier from '../Alarm/AlarmNotifier';
 import OnboardingDialog from '../Onboarding/OnboardingDialog';
 import GuestImportDialog from '../Onboarding/GuestImportDialog';
+import useLargeText from '../../hooks/useLargeText';
 import { captureException, trackEvent } from '../../services/telemetry';
 
 const PRIMARY_NAV_ITEMS = [
@@ -80,6 +81,7 @@ function AppShell() {
   const { shouldShowChecklist } = useOnboarding();
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [importDialogVisible, setImportDialogVisible] = useState(false);
+  const largeText = useLargeText();
 
   const currentPrimaryPath = useMemo(
     () => getCurrentPrimaryPath(location.pathname),
@@ -196,8 +198,11 @@ function AppShell() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Box
               sx={{
-                width: 38,
-                height: 38,
+                // rem, not px, so the badge grows with the user's text size.
+                width: '2.4rem',
+                height: '2.4rem',
+                fontSize: '1.1rem',
+                lineHeight: 1,
                 borderRadius: 3,
                 display: 'grid',
                 placeItems: 'center',
@@ -374,7 +379,9 @@ function AppShell() {
           <BottomNavigation
             value={currentPrimaryPath}
             onChange={(_, nextValue) => navigate(nextValue)}
-            showLabels
+            // With large system text five labels collide; show only the selected
+            // one (every tab keeps its label as its accessible name).
+            showLabels={!largeText}
           >
             {PRIMARY_NAV_ITEMS.map((item) => (
               <BottomNavigationAction
