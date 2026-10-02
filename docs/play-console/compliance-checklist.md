@@ -38,7 +38,7 @@ legal details.
 - [ ] Set `MEDALARM_REVIEW_USERNAME`, `MEDALARM_REVIEW_EMAIL` and
   `MEDALARM_REVIEW_PASSWORD` on the Render backend (rotate the old password)
 - [ ] Store listing text: `docs/play-console/en-GB/`
-- [ ] Upload the 1.1.0 AAB (version code 2) to Internal testing, then Closed
+- [ ] Upload the 1.1.0 AAB (version code 3) to Internal testing, then Closed
   testing. Personal developer accounts need 12+ testers opted in for 14
   days before production access.
 
