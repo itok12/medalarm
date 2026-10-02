@@ -40,6 +40,7 @@ import { captureException, trackEvent } from '../services/telemetry';
 import {
   computeAdherenceStreak,
   findNextAlarm,
+  findTodaysAnswer,
   formatTime12h,
   getTodaysAlarms,
   takenInLast7Days,
@@ -92,7 +93,7 @@ function TodayPage() {
   const { medicines, alarms, logs, loading, error, offline, refreshAll, lastSyncedAt } = useMedData();
   const [permissionStatus, setPermissionStatus] = useState('prompt');
   const [exactStatus, setExactStatus] = useState('granted');
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success', undoLogId: null });
 
   const medNameById = useMemo(() => {
     const map = new Map();
@@ -136,20 +137,34 @@ function TodayPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
-  const showMessage = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
+  const showMessage = (message, severity = 'success', undoLogId = null) => {
+    setSnackbar({ open: true, message, severity, undoLogId });
   };
 
   const handleLog = async (alarm, status) => {
     try {
-      await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
+      const response = await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
       // Refreshing the logs re-runs the reminder sync, which drops this dose's nudges.
       await refreshAll({ background: true });
       trackEvent('dose_logged', { status });
-      showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.');
+      showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.', 'success', response.data?.id);
     } catch (actionError) {
       captureException(actionError, { source: 'TodayPage.handleLog', status });
       showMessage('Could not update this dose.', 'error');
+    }
+  };
+
+  const handleUndo = async (logId) => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+    try {
+      await logAPI.remove(logId);
+      // Refreshing the logs re-runs the reminder sync, so the dose's reminders come back.
+      await refreshAll({ background: true });
+      trackEvent('dose_log_undone');
+      showMessage('Undone. The dose is open again.');
+    } catch (undoError) {
+      captureException(undoError, { source: 'TodayPage.handleUndo' });
+      showMessage('Could not undo this dose.', 'error');
     }
   };
 
@@ -331,6 +346,7 @@ function TodayPage() {
               <Grid container spacing={2}>
                 {todaysAlarms.map((alarm) => {
                   const medicine = medicineById.get(alarm.medicineId);
+                  const answer = findTodaysAnswer(logs, alarm);
                   return (
                     <Grid item xs={12} key={alarm.id}>
                       <Card variant="outlined" sx={{ borderRadius: 4 }}>
@@ -357,6 +373,26 @@ function TodayPage() {
                               {medicine?.dosage || 'Dose not set'} - {medicine?.frequency || 'Schedule not set'}
                             </Typography>
                           </Box>
+                          {answer ? (
+                            // Answered: say so plainly, so nobody wonders whether they already took it.
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                              <Chip
+                                icon={answer.status === 'TAKEN' ? <CheckCircleOutlineIcon /> : undefined}
+                                color={answer.status === 'TAKEN' ? 'success' : 'default'}
+                                label={answer.status === 'TAKEN'
+                                  ? `Taken at ${new Date(answer.takenAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                                  : 'Skipped'}
+                              />
+                              <Button
+                                variant="text"
+                                color="inherit"
+                                onClick={() => handleUndo(answer.id)}
+                                aria-label={`Undo ${answer.status === 'TAKEN' ? 'taken' : 'skipped'} for ${medicine?.name || 'this medicine'} at ${formatTime12h(alarm.alarmTime)}`}
+                              >
+                                Undo
+                              </Button>
+                            </Stack>
+                          ) : (
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Button
                               variant="contained"
@@ -381,6 +417,7 @@ function TodayPage() {
                               Skip
                             </Button>
                           </Stack>
+                          )}
                         </CardContent>
                       </Card>
                     </Grid>
@@ -398,7 +435,15 @@ function TodayPage() {
         autoHideDuration={3500}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          action={snackbar.undoLogId ? (
+            <Button color="inherit" size="small" onClick={() => handleUndo(snackbar.undoLogId)}>
+              Undo
+            </Button>
+          ) : undefined}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

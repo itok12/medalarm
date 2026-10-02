@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -129,6 +130,32 @@ class MedicationLogControllerTest {
 
         List<Map<String, Object>> logs = api.getList(user, "/api/logs");
         assertThat(logs).extracting(log -> log.get("status")).containsExactlyInAnyOrder("SNOOZED", "TAKEN");
+    }
+
+    @Test
+    void undoingATakenDose_removesTheLogAndReturnsThePill() throws Exception {
+        String body = api.log(user, morningAlarmId, "TAKEN", "2026-10-01T08:00:00")
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        Object logId = api.readMap(body).get("id");
+
+        mockMvc.perform(delete("/api/logs/" + logId).header("Authorization", user.bearer()))
+                .andExpect(status().isNoContent());
+
+        assertThat(logCount()).isZero();
+        assertThat(pillsRemaining().intValue()).isEqualTo(30);
+    }
+
+    @Test
+    void anotherUserCannotUndoMyLog() throws Exception {
+        String body = api.log(user, morningAlarmId, "TAKEN", "2026-10-01T08:00:00")
+                .andReturn().getResponse().getContentAsString();
+        Object logId = api.readMap(body).get("id");
+        TestUser intruder = api.register("intruder");
+
+        mockMvc.perform(delete("/api/logs/" + logId).header("Authorization", intruder.bearer()))
+                .andExpect(status().isNotFound());
+        assertThat(logCount()).isEqualTo(1);
     }
 
     @Test

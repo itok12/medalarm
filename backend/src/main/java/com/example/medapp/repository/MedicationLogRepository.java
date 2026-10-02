@@ -23,6 +23,15 @@ public interface MedicationLogRepository extends JpaRepository<MedicationLog, Lo
 
     List<MedicationLog> findByAlarm_IdIn(Collection<Long> alarmIds);
 
+    @Query("""
+            select l
+            from MedicationLog l
+            join fetch l.alarm a
+            join fetch a.medicine m
+            where l.id = :logId and m.user.id = :userId
+            """)
+    Optional<MedicationLog> findForUserById(@Param("logId") Long logId, @Param("userId") Long userId);
+
     Optional<MedicationLog> findFirstByAlarm_IdAndScheduledForAndStatusIn(
             Long alarmId, LocalDateTime scheduledFor, Collection<String> statuses);
 }

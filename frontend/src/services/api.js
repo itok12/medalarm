@@ -271,6 +271,8 @@ export const logAPI = {
     ? guest.addLog(alarmId, status, scheduledFor)
     : api.post('/logs', { alarmId, status, scheduledFor })),
   getMine: () => isGuestMode() ? guest.getLogs() : api.get('/logs'),
+  // Undo a dose answer; the server gives back any pill it used.
+  remove: (logId) => (isGuestMode() ? guest.deleteLog(logId) : api.delete(`/logs/${logId}`)),
   exportCSV: () => isGuestMode() ? guest.exportCSV() : api.get('/logs/export', { responseType: 'blob' }),
 };
 

@@ -9,9 +9,11 @@ import com.example.medapp.repository.AlarmRepository;
 import com.example.medapp.repository.CaregiverRepository;
 import com.example.medapp.repository.MedicationLogRepository;
 import com.example.medapp.repository.MedicineRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -99,6 +101,15 @@ public class MedicationLogService {
         MedicationLog saved = medicationLogRepository.saveAndFlush(log);
         adjustPillCount(alarm, null, normalizedStatus);
         return saved;
+    }
+
+    /** Undo: removes one of the current user's logs and gives back any pill it used. */
+    @Transactional
+    public void deleteLog(Long logId) {
+        MedicationLog log = medicationLogRepository.findForUserById(logId, currentUserService.getCurrentUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Log not found"));
+        adjustPillCount(log.getAlarm(), log.getStatus(), null);
+        medicationLogRepository.delete(log);
     }
 
     @Transactional(readOnly = true)

@@ -174,6 +174,18 @@ export async function addLog(alarmId, status, scheduledFor = null) {
   return ok(entry);
 }
 
+export async function deleteLog(logId) {
+  const store = await load();
+  const log = store.logs.find((entry) => entry.id === logId);
+  if (!log) throw new Error('Log not found');
+  const alarm = store.alarms.find((a) => a.id === log.alarmId);
+  const medicine = alarm ? store.medicines.find((m) => m.id === alarm.medicineId) : null;
+  adjustPillCount(medicine, log.status, null);
+  store.logs = store.logs.filter((entry) => entry.id !== logId);
+  await save(store);
+  return ok({});
+}
+
 export async function exportCSV() {
   const store = await load();
   const rows = ['Date,Time,Medicine,Dosage,Status'];

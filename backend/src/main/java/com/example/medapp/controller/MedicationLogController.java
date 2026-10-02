@@ -35,6 +35,12 @@ public class MedicationLogController {
         return ResponseEntity.ok(log);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteLog(@PathVariable Long id) {
+        medicationLogService.deleteLog(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<List<MedicationLog>> getLogsForCurrentUser() {
         return ResponseEntity.ok(medicationLogService.getLogsForCurrentUser());

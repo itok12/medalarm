@@ -1,6 +1,7 @@
 import {
   buildUpcomingAlarmInstances,
   findNextAlarm,
+  findTodaysAnswer,
   formatTime12h,
   getTodaysAlarms,
 } from './alarmTimeline';
@@ -35,5 +36,27 @@ describe('alarmTimeline', () => {
     expect(instances).toHaveLength(3);
     expect(instances[0].alarm.id).toBe(1);
     expect(instances[1].alarm.id).toBe(2);
+  });
+});
+
+describe('findTodaysAnswer', () => {
+  const alarm = { id: 3, alarmTime: '08:00' };
+  const now = new Date('2026-10-02T09:00');
+
+  it('finds the Taken or Skipped log for today\'s dose', () => {
+    const logs = [
+      { id: 1, alarmId: 3, status: 'TAKEN', scheduledFor: '2026-10-01T08:00:00' },
+      { id: 2, alarmId: 3, status: 'SKIPPED', scheduledFor: '2026-10-02T08:00:00' },
+    ];
+    expect(findTodaysAnswer(logs, alarm, now).id).toBe(2);
+  });
+
+  it('ignores snoozes, other alarms, and logs without a dose', () => {
+    const logs = [
+      { id: 1, alarmId: 3, status: 'SNOOZED', scheduledFor: '2026-10-02T08:00:00' },
+      { id: 2, alarmId: 4, status: 'TAKEN', scheduledFor: '2026-10-02T08:00:00' },
+      { id: 3, alarmId: 3, status: 'TAKEN', takenAt: '2026-10-02T07:59:00Z' },
+    ];
+    expect(findTodaysAnswer(logs, alarm, now)).toBeNull();
   });
 });
