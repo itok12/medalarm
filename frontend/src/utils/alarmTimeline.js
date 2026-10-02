@@ -44,6 +44,18 @@ export function createAlarmDate(baseDate, alarmTime) {
   return date;
 }
 
+// A dose's identity: its wall-clock time, e.g. "2026-10-01T08:00:00". Matches the
+// backend's LocalDateTime scheduledFor.
+export function doseDateTimeKey(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    + `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+}
+
+export function todaysDoseKey(alarmTime, now = new Date()) {
+  return doseDateTimeKey(createAlarmDate(now, alarmTime));
+}
+
 export function getTodaysAlarms(alarms = [], now = new Date()) {
   const todayName = DAYS_OF_WEEK[now.getDay()];
   return alarms

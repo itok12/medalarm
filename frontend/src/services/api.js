@@ -1,5 +1,11 @@
 import axios from 'axios';
 import * as guest from './guestDataService';
+import {
+  CLIENT_HEADER,
+  clearNativeRefreshToken,
+  getNativeRefreshToken,
+  saveNativeRefreshToken,
+} from './nativeSession';
 
 function isGuestMode() {
   try { return localStorage.getItem('medalarm-guest') === 'true'; } catch { return false; }
@@ -22,23 +28,20 @@ function normalizeApiBaseUrl(value) {
   return `${withoutTrailingSlash}/api`;
 }
 
+function isNativeRuntime() {
+  return typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+}
+
 function inferApiBaseUrl() {
   if (typeof window === 'undefined') {
     return 'http://localhost:8080/api';
   }
 
   const { hostname } = window.location;
-  const isNativePlatform = !!window.Capacitor?.isNativePlatform?.();
   const isLocalHost =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
     hostname === '0.0.0.0';
-
-  if (isNativePlatform) {
-    return process.env.NODE_ENV === 'production'
-      ? '/api'
-      : 'http://10.0.2.2:8080/api';
-  }
 
   if (isLocalHost) {
     return 'http://localhost:8080/api';
@@ -47,13 +50,27 @@ function inferApiBaseUrl() {
   return '/api';
 }
 
-function resolveApiBaseUrl() {
+export function resolveApiBaseUrl() {
+  if (isNativeRuntime()) {
+    // Inside the Capacitor WebView a relative '/api' resolves to the app's own
+    // asset server, so native builds always need an absolute backend URL.
+    if (process.env.NODE_ENV === 'production') {
+      return normalizeApiBaseUrl(process.env.REACT_APP_NATIVE_API_BASE_URL);
+    }
+    return normalizeApiBaseUrl(process.env.REACT_APP_NATIVE_API_BASE_URL || 'http://10.0.2.2:8080/api');
+  }
+
   return normalizeApiBaseUrl(
     getRuntimeConfigBaseUrl() || process.env.REACT_APP_API_BASE_URL || inferApiBaseUrl()
   );
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
+
+if (isNativeRuntime() && !/^https?:\/\//.test(API_BASE_URL)) {
+  // Build-time guard (scripts/assert-native-config.js) should make this unreachable.
+  console.error('MedAlarm: REACT_APP_NATIVE_API_BASE_URL is not set; server sync is disabled.');
+}
 
 const STORAGE_KEYS = {
   userId: 'userId',
@@ -106,12 +123,26 @@ function clearSessionFields() {
   LEGACY_TOKEN_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
+// Native apps ask the server to return the refresh token in the body (see nativeSession.js).
+const BASE_HEADERS = {
+  'Content-Type': 'application/json',
+  ...(isNativeRuntime() ? { [CLIENT_HEADER]: 'native' } : {}),
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   // Render free instances can take tens of seconds to wake up after inactivity.
   timeout: 65000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: BASE_HEADERS,
   withCredentials: true,
+});
+
+// Login and register responses carry the refresh token for native clients.
+api.interceptors.response.use(async (response) => {
+  if (response.data?.refreshToken) {
+    await saveNativeRefreshToken(response.data.refreshToken);
+  }
+  return response;
 });
 
 api.interceptors.request.use((config) => {
@@ -139,13 +170,14 @@ const processQueue = (error, token = null) => {
 
 const requestTokenRefresh = () => {
   if (!refreshPromise) {
-    refreshPromise = axios
-      .post(`${API_BASE_URL}/auth/refresh`, {}, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 65000,
-        withCredentials: true,
-      })
-      .then((response) => {
+    refreshPromise = getNativeRefreshToken()
+      .then((refreshToken) => axios.post(
+        `${API_BASE_URL}/auth/refresh`,
+        refreshToken ? { refreshToken } : {},
+        { headers: BASE_HEADERS, timeout: 65000, withCredentials: true },
+      ))
+      .then(async (response) => {
+        await saveNativeRefreshToken(response.data?.refreshToken);
         persistSessionFields(response.data);
         return response;
       })
@@ -189,8 +221,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        clearSessionFields();
-        // Do not redirect — AuthContext handles session state
+        // Drop only the access token. Keeping the stored identity means a failed
+        // refresh (offline, server asleep) never turns a signed-in user into a
+        // guest and wipes their cached schedule and reminders. AuthContext
+        // decides when a session has really expired.
+        setAccessToken(null);
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -205,7 +240,14 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
   refresh: () => requestTokenRefresh(),
-  logout: () => api.post('/auth/logout'),
+  logout: async () => {
+    const refreshToken = await getNativeRefreshToken();
+    try {
+      return await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
+    } finally {
+      await clearNativeRefreshToken();
+    }
+  },
 };
 
 export const medicineAPI = {
@@ -224,9 +266,17 @@ export const alarmAPI = {
 };
 
 export const logAPI = {
-  log: (alarmId, status) => isGuestMode() ? guest.addLog(alarmId, status) : api.post('/logs', { alarmId, status }),
+  // scheduledFor identifies the dose being answered (see doseDateTimeKey).
+  log: (alarmId, status, scheduledFor) => (isGuestMode()
+    ? guest.addLog(alarmId, status, scheduledFor)
+    : api.post('/logs', { alarmId, status, scheduledFor })),
   getMine: () => isGuestMode() ? guest.getLogs() : api.get('/logs'),
   exportCSV: () => isGuestMode() ? guest.exportCSV() : api.get('/logs/export', { responseType: 'blob' }),
+};
+
+export const importAPI = {
+  // One all-or-nothing request with everything a guest created on this device.
+  guest: (payload) => api.post('/import/guest', payload),
 };
 
 export const userAPI = {
@@ -236,11 +286,17 @@ export const userAPI = {
 };
 
 export const caregiverAPI = {
+  // As a caregiver: request access, then read logs once the patient accepts.
   addPatient: (patientUsername) =>
     api.post('/caregivers/patients', { patientUsername }),
   getPatients: () => api.get('/caregivers/patients'),
+  removePatient: (patientId) => api.delete(`/caregivers/patients/${patientId}`),
   getPatientLogs: (patientId) =>
     api.get(`/caregivers/patients/${patientId}/logs`),
+  // As a patient: who has asked for, or has, access to my history.
+  getCaregivers: () => api.get('/caregivers/caregivers'),
+  acceptCaregiver: (caregiverId) => api.post(`/caregivers/caregivers/${caregiverId}/accept`),
+  removeCaregiver: (caregiverId) => api.delete(`/caregivers/caregivers/${caregiverId}`),
 };
 
 export { clearSessionFields, getAccessToken, persistSessionFields, setAccessToken };

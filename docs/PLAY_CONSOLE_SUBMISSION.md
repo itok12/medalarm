@@ -43,6 +43,10 @@ This checklist turns the signed Android release into a Play Console-ready submis
 - Primary value: medicine reminders, logging adherence, and caregiver read-only visibility
 - Account required: `Yes`, because schedules and logs are tied to the authenticated user
 - Sensitive functionality: notifications and health-related routine tracking
+- Health apps declaration: `Medical` -> `Medication and treatment management`
+- Medical device app: `No`
+- Suggested disclaimer:
+  `MedAlarm is not a medical device and does not provide diagnosis, treatment recommendations, or professional medical advice.`
 
 ## Required Links
 

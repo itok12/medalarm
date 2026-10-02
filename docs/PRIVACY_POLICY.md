@@ -15,7 +15,7 @@ MedAlarm stores the account information, medicine schedules, reminder preference
 ## Data Sharing
 
 - MedAlarm does not sell personal data.
-- Caregivers can only see adherence history for patients they have been explicitly linked to.
+- A caregiver can only see your adherence history after you approve their request in the Care tab. You can stop sharing at any time, and pending requests share nothing.
 - MedAlarm does not allow caregivers to edit medicines or alarms in this version.
 
 ## Questions

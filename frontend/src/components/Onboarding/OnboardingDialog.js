@@ -37,7 +37,7 @@ const STEP_TITLES = ['Welcome', 'Preferences', 'Reminders', 'First medicine'];
 function OnboardingDialog() {
   const navigate = useNavigate();
   const { user, updateUserFromProfile } = useAuth();
-  const { medicines, alarms, loading } = useMedData();
+  const { medicines, alarms, logs, loading } = useMedData();
   const {
     hydrated,
     readyToComplete,
@@ -227,7 +227,7 @@ function OnboardingDialog() {
       markStep('reminders');
       trackEvent('onboarding_reminder_permission', { status });
       if (status === 'granted') {
-        await syncNativeAlarmNotifications(alarms, medicines);
+        await syncNativeAlarmNotifications(alarms, medicines, logs);
       }
       setActiveStep(3);
       return;

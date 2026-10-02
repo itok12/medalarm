@@ -20,6 +20,8 @@ public class Medicine {
     private String imageUrl;
     private LocalDate startDate;
     private LocalDate endDate;
+    private Integer pillsRemaining;
+    private Integer pillsPerDose;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -96,6 +98,12 @@ public class Medicine {
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
+
+    public Integer getPillsRemaining() { return pillsRemaining; }
+    public void setPillsRemaining(Integer pillsRemaining) { this.pillsRemaining = pillsRemaining; }
+
+    public Integer getPillsPerDose() { return pillsPerDose; }
+    public void setPillsPerDose(Integer pillsPerDose) { this.pillsPerDose = pillsPerDose; }
 
     public User getUser() { return user; }
 

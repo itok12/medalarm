@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { alarmAPI, logAPI } from "../../services/api";
+import { todaysDoseKey } from "../../utils/alarmTimeline";
 import {
   Alert, Box, Button, Divider, List, ListItem, ListItemText, Snackbar, Switch, Typography, IconButton
 } from "@mui/material";
@@ -54,10 +55,10 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
     }
   };
 
-  const handleLog = async (alarmId, status) => {
+  const handleLog = async (alarm, status) => {
     setError("");
     try {
-      await logAPI.log(alarmId, status);
+      await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
       setSnackbar({ open: true, message: status === "TAKEN" ? "✅ Marked as taken!" : "⏭ Alarm skipped." });
     } catch (e) {
       console.error("Log failed:", e);
@@ -103,7 +104,7 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
                       size="small"
                       variant="outlined"
                       color="success"
-                      onClick={() => handleLog(a.id, "TAKEN")}
+                      onClick={() => handleLog(a, "TAKEN")}
                       sx={{ minWidth: 0, px: 1 }}
                     >
                       ✅
@@ -112,7 +113,7 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
                       size="small"
                       variant="outlined"
                       color="warning"
-                      onClick={() => handleLog(a.id, "SKIPPED")}
+                      onClick={() => handleLog(a, "SKIPPED")}
                       sx={{ minWidth: 0, px: 1 }}
                     >
                       ⏭

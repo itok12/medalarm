@@ -29,13 +29,22 @@ import { useMedData } from '../context/MedDataContext';
 import { useSettings } from '../context/SettingsContext';
 import { logAPI } from '../services/api';
 import {
+  getExactAlarmStatus,
   getReminderPermissionStatus,
+  openExactAlarmSettings,
   requestReminderPermission,
   scheduleSnoozedReminder,
   syncNativeAlarmNotifications,
 } from '../services/reminderService';
 import { captureException, trackEvent } from '../services/telemetry';
-import { computeAdherenceStreak, findNextAlarm, formatTime12h, getTodaysAlarms, takenInLast7Days } from '../utils/alarmTimeline';
+import {
+  computeAdherenceStreak,
+  findNextAlarm,
+  formatTime12h,
+  getTodaysAlarms,
+  takenInLast7Days,
+  todaysDoseKey,
+} from '../utils/alarmTimeline';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -82,6 +91,7 @@ function TodayPage() {
   const { settings } = useSettings();
   const { medicines, alarms, logs, loading, error, offline, refreshAll, lastSyncedAt } = useMedData();
   const [permissionStatus, setPermissionStatus] = useState('prompt');
+  const [exactStatus, setExactStatus] = useState('granted');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const medNameById = useMemo(() => {
@@ -101,17 +111,39 @@ function TodayPage() {
   const takenThisWeek = useMemo(() => takenInLast7Days(logs), [logs]);
   const streak = useMemo(() => computeAdherenceStreak(logs), [logs]);
 
+  const lowStockMedicines = useMemo(() => medicines.filter((med) => {
+    if (med.pillsRemaining == null) return false;
+    const dosesPerDay = {
+      'Once daily': 1, 'Twice daily': 2, 'Three times daily': 3, 'Four times daily': 4,
+    }[med.frequency] || 1;
+    const perDose = med.pillsPerDose || 1;
+    return med.pillsRemaining <= perDose * dosesPerDay * 7;
+  }), [medicines]);
+
   useEffect(() => {
-    getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
+    const checkPermissions = () => {
+      getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
+      getExactAlarmStatus().then(setExactStatus).catch(() => setExactStatus('granted'));
+    };
+
+    // Re-check when the user comes back from the system settings screen.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') checkPermissions();
+    };
+
+    checkPermissions();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   const showMessage = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const handleLog = async (alarmId, status) => {
+  const handleLog = async (alarm, status) => {
     try {
-      await logAPI.log(alarmId, status);
+      await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
+      // Refreshing the logs re-runs the reminder sync, which drops this dose's nudges.
       await refreshAll({ background: true });
       trackEvent('dose_logged', { status });
       showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.');
@@ -124,9 +156,12 @@ function TodayPage() {
   const handleSnooze = async (alarm) => {
     const medicine = medicineById.get(alarm.medicineId);
     try {
-      await logAPI.log(alarm.id, 'SNOOZED');
+      const scheduledFor = todaysDoseKey(alarm.alarmTime);
+      await logAPI.log(alarm.id, 'SNOOZED', scheduledFor);
       await scheduleSnoozedReminder({
         alarmId: alarm.id,
+        scheduledFor,
+        medicineId: alarm.medicineId,
         medicineName: medicine?.name,
         dosage: medicine?.dosage,
         minutes: settings.snoozeDurationMinutes,
@@ -144,10 +179,20 @@ function TodayPage() {
     const status = await requestReminderPermission();
     setPermissionStatus(status);
     if (status === 'granted') {
-      await syncNativeAlarmNotifications(alarms, medicines);
+      await syncNativeAlarmNotifications(alarms, medicines, logs);
       showMessage('Reminders are enabled.');
     }
     trackEvent('reminder_permission_requested', { status });
+  };
+
+  const allowExactReminders = async () => {
+    try {
+      const status = await openExactAlarmSettings();
+      setExactStatus(status);
+      trackEvent('exact_alarm_permission_requested', { status });
+    } catch (settingsError) {
+      captureException(settingsError, { source: 'TodayPage.allowExactReminders' });
+    }
   };
 
   return (
@@ -156,11 +201,24 @@ function TodayPage() {
       subtitle="Your next doses, quick actions, and reminder status all live here."
     >
       <Stack spacing={3}>
-        {error && <Alert severity="error">{error}</Alert>}
+        {/* An expired session already has its own banner; don't blame the connection. */}
+        {error && !user?.sessionExpired && <Alert severity="error">{error}</Alert>}
+
+        {lowStockMedicines.length > 0 && (
+          <Alert severity="warning" sx={{ borderRadius: 3 }}>
+            <strong>Refill soon:</strong>{' '}
+            {lowStockMedicines.map((m) => `${m.name} (${m.pillsRemaining} pills left)`).join(', ')}
+          </Alert>
+        )}
 
         <OnboardingChecklistCard />
 
-        <ReminderPermissionCard status={permissionStatus} onEnable={enableReminders} />
+        <ReminderPermissionCard
+          status={permissionStatus}
+          exactStatus={exactStatus}
+          onEnable={enableReminders}
+          onAllowExact={allowExactReminders}
+        />
 
         <Card
           sx={{
@@ -303,7 +361,7 @@ function TodayPage() {
                             <Button
                               variant="contained"
                               color="success"
-                              onClick={() => handleLog(alarm.id, 'TAKEN')}
+                              onClick={() => handleLog(alarm, 'TAKEN')}
                             >
                               Taken
                             </Button>
@@ -318,7 +376,7 @@ function TodayPage() {
                             <Button
                               variant="text"
                               color="inherit"
-                              onClick={() => handleLog(alarm.id, 'SKIPPED')}
+                              onClick={() => handleLog(alarm, 'SKIPPED')}
                             >
                               Skip
                             </Button>
