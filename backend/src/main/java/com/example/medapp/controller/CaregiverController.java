@@ -1,104 +1,66 @@
 package com.example.medapp.controller;
 
 import com.example.medapp.dto.CaregiverPatientRequest;
-import com.example.medapp.entity.CaregiverAccessLog;
-import com.example.medapp.entity.CaregiverRelation;
 import com.example.medapp.entity.MedicationLog;
-import com.example.medapp.entity.User;
-import com.example.medapp.repository.CaregiverAccessLogRepository;
-import com.example.medapp.repository.CaregiverRepository;
-import com.example.medapp.repository.UserRepository;
-import com.example.medapp.service.CurrentUserService;
-import com.example.medapp.service.MedicationLogService;
+import com.example.medapp.service.CaregiverService;
+import com.example.medapp.service.CaregiverService.LinkView;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/caregivers")
 public class CaregiverController {
 
-    private final CaregiverRepository caregiverRepository;
-    private final CaregiverAccessLogRepository caregiverAccessLogRepository;
-    private final UserRepository userRepository;
-    private final CurrentUserService currentUserService;
-    private final MedicationLogService medicationLogService;
+    private final CaregiverService caregiverService;
 
-    public CaregiverController(CaregiverRepository caregiverRepository,
-                                CaregiverAccessLogRepository caregiverAccessLogRepository,
-                                UserRepository userRepository,
-                                CurrentUserService currentUserService,
-                                MedicationLogService medicationLogService) {
-        this.caregiverRepository = caregiverRepository;
-        this.caregiverAccessLogRepository = caregiverAccessLogRepository;
-        this.userRepository = userRepository;
-        this.currentUserService = currentUserService;
-        this.medicationLogService = medicationLogService;
+    public CaregiverController(CaregiverService caregiverService) {
+        this.caregiverService = caregiverService;
     }
 
+    // ── As a caregiver ─────────────────────────────────────────────────────────
+
+    /** Sends an access request; the patient must accept it before anything is shared. */
     @PostMapping("/patients")
-    public ResponseEntity<?> addPatient(@Valid @RequestBody CaregiverPatientRequest body) {
-        User caregiver = currentUserService.getCurrentUser();
-        String patientUsername = body.getPatientUsername();
-
-        User patient = userRepository.findByUsername(patientUsername).orElse(null);
-        if (patient == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Patient not found"));
-        }
-
-        if (caregiver.getId().equals(patient.getId())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Cannot add yourself as a patient"));
-        }
-
-        if (caregiverRepository.existsByCaregiverIdAndPatientId(caregiver.getId(), patient.getId())) {
-            return ResponseEntity.status(409).body(Map.of("error", "Relation already exists"));
-        }
-
-        CaregiverRelation relation = new CaregiverRelation();
-        relation.setCaregiver(caregiver);
-        relation.setPatient(patient);
-        caregiverRepository.save(relation);
-
-        return ResponseEntity.status(201).body(Map.of(
-                "id", patient.getId(),
-                "username", patient.getUsername(),
-                "email", patient.getEmail() != null ? patient.getEmail() : ""
-        ));
+    public ResponseEntity<LinkView> requestAccess(@Valid @RequestBody CaregiverPatientRequest body) {
+        return ResponseEntity.status(201).body(caregiverService.requestAccess(body.getPatientUsername()));
     }
 
     @GetMapping("/patients")
-    public ResponseEntity<List<Map<String, Object>>> getPatients() {
-        List<CaregiverRelation> relations = caregiverRepository.findByCaregiver_IdOrderByPatient_UsernameAsc(currentUserService.getCurrentUserId());
-        List<Map<String, Object>> patients = relations.stream()
-                .map(r -> {
-                    User p = r.getPatient();
-                    return Map.<String, Object>of(
-                            "id", p.getId(),
-                            "username", p.getUsername(),
-                            "email", p.getEmail() != null ? p.getEmail() : ""
-                    );
-                })
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(patients);
+    public List<LinkView> listPatients() {
+        return caregiverService.listPatients();
+    }
+
+    @DeleteMapping("/patients/{patientId}")
+    public ResponseEntity<Void> removePatient(@PathVariable Long patientId) {
+        caregiverService.removePatient(patientId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/patients/{patientId}/logs")
-    public ResponseEntity<List<MedicationLog>> getPatientLogs(@PathVariable Long patientId) {
-        List<MedicationLog> logs = medicationLogService.getLogsForPatient(patientId);
-        recordCaregiverAccess(patientId);
-        return ResponseEntity.ok(logs);
+    public List<MedicationLog> getPatientLogs(@PathVariable Long patientId) {
+        return caregiverService.readPatientLogs(patientId);
     }
 
-    private void recordCaregiverAccess(Long patientId) {
-        CaregiverAccessLog accessLog = new CaregiverAccessLog();
-        accessLog.setCaregiver(currentUserService.getCurrentUser());
-        accessLog.setPatient(userRepository.getReferenceById(patientId));
-        accessLog.setAccessedAt(LocalDateTime.now());
-        caregiverAccessLogRepository.save(accessLog);
+    // ── As a patient ───────────────────────────────────────────────────────────
+
+    /** Pending requests and accepted caregivers who can see the current user's history. */
+    @GetMapping("/caregivers")
+    public List<LinkView> listCaregivers() {
+        return caregiverService.listCaregivers();
+    }
+
+    @PostMapping("/caregivers/{caregiverId}/accept")
+    public LinkView acceptCaregiver(@PathVariable Long caregiverId) {
+        return caregiverService.acceptCaregiver(caregiverId);
+    }
+
+    /** Declines a pending request or revokes an accepted caregiver. */
+    @DeleteMapping("/caregivers/{caregiverId}")
+    public ResponseEntity<Void> removeCaregiver(@PathVariable Long caregiverId) {
+        caregiverService.removeCaregiver(caregiverId);
+        return ResponseEntity.noContent().build();
     }
 }

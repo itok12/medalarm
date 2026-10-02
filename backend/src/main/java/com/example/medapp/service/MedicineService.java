@@ -41,6 +41,8 @@ public class MedicineService {
         medicine.setUser(user);
         medicine.setStartDate(req.getStartDate());
         medicine.setEndDate(req.getEndDate());
+        medicine.setPillsRemaining(req.getPillsRemaining());
+        medicine.setPillsPerDose(req.getPillsPerDose() != null ? req.getPillsPerDose() : 1);
 
         return medicineRepository.save(medicine);
     }
@@ -59,6 +61,8 @@ public class MedicineService {
         medicine.setImageUrl(req.getImageUrl());
         medicine.setStartDate(req.getStartDate());
         medicine.setEndDate(req.getEndDate());
+        medicine.setPillsRemaining(req.getPillsRemaining());
+        medicine.setPillsPerDose(req.getPillsPerDose() != null ? req.getPillsPerDose() : 1);
 
         return medicineRepository.save(medicine);
     }

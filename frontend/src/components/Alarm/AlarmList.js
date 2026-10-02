@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { alarmAPI, logAPI } from "../../services/api";
+import { todaysDoseKey } from "../../utils/alarmTimeline";
 import {
   Alert, Box, Button, Divider, List, ListItem, ListItemText, Snackbar, Switch, Typography, IconButton
 } from "@mui/material";
@@ -44,6 +45,7 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Delete this alarm? Its dose history is deleted too.")) return;
     setError("");
     try {
       await alarmAPI.delete(id);
@@ -54,10 +56,10 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
     }
   };
 
-  const handleLog = async (alarmId, status) => {
+  const handleLog = async (alarm, status) => {
     setError("");
     try {
-      await logAPI.log(alarmId, status);
+      await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
       setSnackbar({ open: true, message: status === "TAKEN" ? "✅ Marked as taken!" : "⏭ Alarm skipped." });
     } catch (e) {
       console.error("Log failed:", e);
@@ -103,7 +105,8 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
                       size="small"
                       variant="outlined"
                       color="success"
-                      onClick={() => handleLog(a.id, "TAKEN")}
+                      onClick={() => handleLog(a, "TAKEN")}
+                      aria-label={`Mark ${formatTime(a.alarmTime)} ${medName} dose as taken`}
                       sx={{ minWidth: 0, px: 1 }}
                     >
                       ✅
@@ -112,14 +115,23 @@ function AlarmList({ alarms = [], medicines = [], onChanged }) {
                       size="small"
                       variant="outlined"
                       color="warning"
-                      onClick={() => handleLog(a.id, "SKIPPED")}
+                      onClick={() => handleLog(a, "SKIPPED")}
+                      aria-label={`Skip ${formatTime(a.alarmTime)} ${medName} dose`}
                       sx={{ minWidth: 0, px: 1 }}
                     >
                       ⏭
                     </Button>
-                    <Switch checked={!!a.active} onChange={() => handleToggle(a)} />
-                    <IconButton size="small" color="error" onClick={() => handleDelete(a.id)}>
-                      <DeleteIcon fontSize="small" />
+                    <Switch
+                      checked={!!a.active}
+                      onChange={() => handleToggle(a)}
+                      inputProps={{ "aria-label": `${a.active ? "Turn off" : "Turn on"} ${formatTime(a.alarmTime)} alarm for ${medName}` }}
+                    />
+                    <IconButton
+                      color="error"
+                      aria-label={`Delete ${formatTime(a.alarmTime)} alarm for ${medName}`}
+                      onClick={() => handleDelete(a.id)}
+                    >
+                      <DeleteIcon />
                     </IconButton>
                   </Box>
                 }

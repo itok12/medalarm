@@ -31,13 +31,14 @@ import {
   syncNativeAlarmNotifications,
 } from '../../services/reminderService';
 import { trackEvent } from '../../services/telemetry';
+import { MedicalDisclaimer } from '../Common/HealthDataConsent';
 
 const STEP_TITLES = ['Welcome', 'Preferences', 'Reminders', 'First medicine'];
 
 function OnboardingDialog() {
   const navigate = useNavigate();
   const { user, updateUserFromProfile } = useAuth();
-  const { medicines, alarms, loading } = useMedData();
+  const { medicines, alarms, logs, loading } = useMedData();
   const {
     hydrated,
     readyToComplete,
@@ -91,6 +92,7 @@ function OnboardingDialog() {
               This quick setup keeps the Today screen useful, makes native notifications reliable,
               and gives the app the information it needs to generate better schedules.
             </Typography>
+            <MedicalDisclaimer />
           </Stack>
         );
       case 1:
@@ -227,7 +229,7 @@ function OnboardingDialog() {
       markStep('reminders');
       trackEvent('onboarding_reminder_permission', { status });
       if (status === 'granted') {
-        await syncNativeAlarmNotifications(alarms, medicines);
+        await syncNativeAlarmNotifications(alarms, medicines, logs);
       }
       setActiveStep(3);
       return;

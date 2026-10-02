@@ -41,11 +41,12 @@ function MedicineList({ medicines = [], onChanged }) {
             <ListItem
               secondaryAction={(
                 <Box>
-                  <IconButton size="small" onClick={() => setEditMedicine(medicine)}>
-                    <EditIcon fontSize="small" />
+                  {/* Default size keeps a 48px touch target; labels are read by screen readers. */}
+                  <IconButton aria-label={`Edit ${medicine.name}`} onClick={() => setEditMedicine(medicine)}>
+                    <EditIcon />
                   </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(medicine.id)}>
-                    <DeleteIcon fontSize="small" />
+                  <IconButton aria-label={`Delete ${medicine.name}`} color="error" onClick={() => handleDelete(medicine.id)}>
+                    <DeleteIcon />
                   </IconButton>
                 </Box>
               )}
@@ -68,6 +69,17 @@ function MedicineList({ medicines = [], onChanged }) {
                     {medicine.status === 'EXPIRING_SOON' && (
                       <Chip label="Expiring soon" size="small" sx={{ bgcolor: 'orange', color: 'white' }} />
                     )}
+                    {(() => {
+                      if (medicine.pillsRemaining == null) return null;
+                      const dosesPerDay = {
+                        'Once daily': 1, 'Twice daily': 2, 'Three times daily': 3, 'Four times daily': 4,
+                      }[medicine.frequency] || 1;
+                      const perDose = medicine.pillsPerDose || 1;
+                      const daysLeft = Math.floor(medicine.pillsRemaining / (perDose * dosesPerDay));
+                      if (medicine.pillsRemaining === 0) return <Chip label="Out of pills" size="small" color="error" />;
+                      if (daysLeft <= 7) return <Chip label={`Refill soon · ${medicine.pillsRemaining} left`} size="small" color="warning" />;
+                      return <Chip label={`${medicine.pillsRemaining} pills`} size="small" variant="outlined" />;
+                    })()}
                   </Box>
                 )}
                 secondary={(

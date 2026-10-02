@@ -27,6 +27,9 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    @Value("${medalarm.rate-limit.trust-forwarded-for:false}")
+    private boolean trustForwardedFor;
+
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost,https://localhost,capacitor://localhost,http://10.0.2.2}")
     private String allowedOriginsConfig;
 
@@ -50,7 +53,7 @@ public class SecurityConfig {
             .cors(c -> c.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(h -> h.frameOptions(f -> f.disable())) // H2 console
+            .headers(h -> h.frameOptions(f -> f.sameOrigin())) // H2 console (dev only) uses same-origin frames
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/h2-console/**", "/actuator/health").permitAll()
                 .requestMatchers("/api/**").authenticated()
@@ -62,7 +65,7 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, accessDeniedException) ->
                     writeJsonError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
             )
-            .addFilterBefore(new RateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new RateLimitFilter(trustForwardedFor), UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

@@ -58,37 +58,108 @@
     a {
       color: var(--accent);
     }
+    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    th, td { text-align: left; vertical-align: top; padding: 8px 10px;
+      border-bottom: 1px solid color-mix(in srgb, var(--muted) 24%, transparent); }
+    th { color: var(--text); }
+    td { color: var(--muted); }
+    .table-wrap { overflow-x: auto; }
   </style>
 </head>
 <body>
+  <!-- Generated from docs/PRIVACY_POLICY.md; edit that file and regenerate. -->
   <main>
     <section class="card">
-      <p>Updated March 29, 2026</p>
+      <p>Updated 2 October 2026</p>
       <h1>MedAlarm Privacy Policy</h1>
-      <p>MedAlarm stores the account information, medicine schedules, reminder preferences, and adherence history needed to deliver the app experience.</p>
+      <p>MedAlarm is a medication reminder app. This policy explains what data it handles, why, who else processes it, how long it is kept, and your rights under UK data protection law (UK GDPR and the Data Protection Act 2018).</p>
     </section>
     <section class="card">
-      <h2>What MedAlarm stores</h2>
+      <h2>Who is responsible for your data</h2>
+      <p>The data controller is <strong>[TO FILL: your full legal name]</strong>, an individual developer based in the United Kingdom, trading as MedAlarm. Contact: <strong><a href="mailto:support@medalarmapp.com">support@medalarmapp.com</a></strong>.</p>
+    </section>
+    <section class="card">
+      <h2>Two ways to use MedAlarm</h2>
+      <p><strong>Without an account (guest mode).</strong> Everything you enter stays on your phone. MedAlarm's servers never receive your medicines, reminders or dose history. Removing the app, or choosing "Delete" when asked about guest data, erases it.</p>
+      <p><strong>With an account.</strong> Your data is stored on MedAlarm's servers so it can sync and be shared with a caregiver you approve. You must agree to this when you create the account (see "Health data and your consent").</p>
+    </section>
+    <section class="card">
+      <h2>What we collect and why</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>Why</th><th>Lawful basis</th></tr></thead>
+        <tbody>
+          <tr><td>Username, email address, password (stored only as a one-way hash), timezone, default alarm time, email-reminder preference</td><td>To run your account and sign you in</td><td>Contract (Article 6(1)(b))</td></tr>
+          <tr><td>Medicines (name, dose, frequency, instructions, start/end dates, pill counts), reminder times, and dose history (taken, skipped, snoozed, with times)</td><td>To schedule reminders, sync them, and show your history</td><td>Your <strong>explicit consent</strong> (Article 9(2)(a)), plus contract</td></tr>
+          <tr><td>Caregiver links: who asked to see your history, and whether you approved</td><td>To share your history only with people you approve</td><td>Your consent, given by approving each request</td></tr>
+          <tr><td>A record each time a caregiver views your history</td><td>So you can see and audit access</td><td>Legitimate interests (Article 6(1)(f))</td></tr>
+          <tr><td>The photo you take when you use "Scan label"</td><td>To read the medicine name and dose from the label; it is not stored</td><td>Your explicit consent, given each time you take a scan</td></tr>
+          <tr><td>Your IP address and the account name you try to sign in with, held in memory for up to 15 minutes</td><td>To block password-guessing and spam sign-ups</td><td>Legitimate interests</td></tr>
+        </tbody>
+      </table></div>
+      <p>MedAlarm does not use advertising, does not sell data, and does not use analytics or crash-reporting services at present. If that changes, this policy will be updated first.</p>
+    </section>
+    <section class="card">
+      <h2>Health data and your consent</h2>
+      <p>Your medicines and dose history are health data, a special category of personal data. We only store it on our servers with your explicit consent, which you give when you create an account (or, for accounts created before October 2026, the first time you open the app after this update). We record when you agreed and which version of the wording you agreed to.</p>
+      <p>You can withdraw consent at any time by deleting your account (see below). Withdrawing doesn't affect anything done before you withdrew.</p>
+    </section>
+    <section class="card">
+      <h2>Who else processes your data</h2>
+      <p>We use these service providers. They act only on our instructions.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Provider</th><th>What they do</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td>Render Services, Inc.</td><td>Hosts the MedAlarm servers and database</td><td>United States</td></tr>
+          <tr><td>Anthropic, PBC</td><td>Reads medicine labels from photos you choose to scan</td><td>United States</td></tr>
+        </tbody>
+      </table></div>
+      <p>Caregivers you approve can read your dose history (medicine names, times, taken or skipped). They cannot change your medicines or reminders.</p>
+      <p>We do not share your data with anyone else unless the law requires it.</p>
+    </section>
+    <section class="card">
+      <h2>International transfers</h2>
+      <p>Our hosting provider and label-scan provider are in the United States. These transfers are protected by each provider's Data Processing Addendum:</p>
       <ul>
-        <li>Account details such as username, email address, password hash, timezone, and reminder defaults.</li>
-        <li>Medicines, alarms, adherence logs, and caregiver links that you explicitly create.</li>
-        <li>Optional telemetry for analytics and crash reporting when deployment-level environment variables enable those integrations.</li>
+        <li><strong>Render</strong> transfers data under the UK Extension to the EU-US Data Privacy Framework, or, where that does not apply, the UK International Data Transfer Addendum to the EU standard contractual clauses.</li>
+        <li><strong>Anthropic</strong> transfers data under the UK International Data Transfer Addendum to the EU standard contractual clauses.</li>
       </ul>
     </section>
     <section class="card">
-      <h2>What MedAlarm does not do</h2>
+      <h2>How long we keep data</h2>
       <ul>
-        <li>Sell personal data.</li>
-        <li>Share your adherence history with other users by default.</li>
-        <li>Allow caregivers to edit your medicines or alarms in this version.</li>
+        <li><strong>Account and health data:</strong> while your account exists. When you delete your account, it is removed from our live database straight away and from any database backups within 7 days, when those backups expire.</li>
+        <li><strong>Scanned label photos:</strong> not stored by MedAlarm. Anthropic processes them under its own API terms.</li>
+        <li><strong>Sign-in protection data:</strong> up to 15 minutes, in memory only.</li>
+        <li><strong>Guest-mode data:</strong> on your phone only, until you delete it or remove the app.</li>
       </ul>
     </section>
     <section class="card">
-      <h2>Questions</h2>
-      <p>If you need help or want to request data changes, use the support page or the account deletion page available on the deployed MedAlarm site.</p>
-      <p><a href="/support.html">Open support page</a></p>
-      <p><a href="/delete-account.html">Open account deletion page</a></p>
-      <p>Support email: <a href="mailto:support@medalarmapp.com">support@medalarmapp.com</a></p>
+      <h2>Your rights</h2>
+      <p>You can ask us to:</p>
+      <ul>
+        <li>give you a copy of your data (you can also export your dose history as a CSV file from the History screen),</li>
+        <li>correct it (most of it you can edit in the app),</li>
+        <li>delete it (Profile ▸ Delete account in the app, or <a href="https://medalarmapp.com/delete-account.html">https://medalarmapp.com/delete-account.html</a>),</li>
+        <li>restrict or object to how we use it,</li>
+        <li>move it to another service.</li>
+      </ul>
+      <p>Email <a href="mailto:support@medalarmapp.com">support@medalarmapp.com</a> and we will reply within one month. If you are unhappy with how we handle your data, you can complain to the Information Commissioner's Office: <a href="https://ico.org.uk/make-a-complaint/">https://ico.org.uk/make-a-complaint/</a>.</p>
+    </section>
+    <section class="card">
+      <h2>Security</h2>
+      <p>Connections to our servers are encrypted (HTTPS). Passwords are stored only as hashes. Caregivers see nothing until you approve them. On your phone, your sign-in is kept in app-private storage.</p>
+    </section>
+    <section class="card">
+      <h2>Children</h2>
+      <p>MedAlarm is intended for adults (18+). We do not knowingly collect data from children.</p>
+    </section>
+    <section class="card">
+      <h2>Not medical advice</h2>
+      <p>MedAlarm is a reminder tool, not medical advice, and is not a medical device. Follow your doctor or pharmacist's instructions. Reminders depend on your phone's settings and can be delayed, so don't rely on MedAlarm alone for medicines where a missed or late dose is dangerous.</p>
+    </section>
+    <section class="card">
+      <h2>Changes to this policy</h2>
+      <p>We will update the date at the top when this policy changes. If a change affects how we use your health data, we will ask for your consent again in the app.</p>
     </section>
   </main>
 </body>

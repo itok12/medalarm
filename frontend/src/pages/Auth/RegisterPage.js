@@ -9,6 +9,9 @@ import {
   Paper,
   TextField,
   Typography,
+  Checkbox,
+  FormControlLabel,
+  FormHelperText,
 } from '@mui/material';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
@@ -16,6 +19,7 @@ import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { trackEvent } from '../../services/telemetry';
 import { extractErrorMessage } from '../../utils/errorUtils';
+import { HealthDataConsentText, MedicalDisclaimer } from '../../components/Common/HealthDataConsent';
 
 function resolveNextPath(search) {
   const next = new URLSearchParams(search).get('next');
@@ -34,6 +38,7 @@ function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [consent, setConsent] = useState(false);
   const nextPath = resolveNextPath(location.search);
 
   const validate = () => {
@@ -44,6 +49,7 @@ function RegisterPage() {
     else if (!/\S+@\S+\.\S+/.test(form.email)) nextErrors.email = 'Invalid email address';
     if (!form.password) nextErrors.password = 'Password is required';
     else if (form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters';
+    if (!consent) nextErrors.consent = 'Please agree so MedAlarm can store your medicines with your account.';
     return nextErrors;
   };
 
@@ -66,6 +72,7 @@ function RegisterPage() {
       const response = await authAPI.register({
         ...form,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        healthDataConsent: consent,
       });
       login(response.data);
       trackEvent('register_success');
@@ -199,6 +206,21 @@ function RegisterPage() {
                 helperText={errors.password || 'Minimum 6 characters'}
                 autoComplete="new-password"
               />
+              <FormControlLabel
+                sx={{ mt: 1.5, alignItems: 'flex-start' }}
+                control={(
+                  <Checkbox
+                    checked={consent}
+                    onChange={(event) => {
+                      setConsent(event.target.checked);
+                      setErrors((previous) => ({ ...previous, consent: '' }));
+                    }}
+                    sx={{ mt: -0.5 }}
+                  />
+                )}
+                label={<HealthDataConsentText />}
+              />
+              {errors.consent && <FormHelperText error>{errors.consent}</FormHelperText>}
               <Button
                 type="submit"
                 variant="contained"
@@ -211,6 +233,7 @@ function RegisterPage() {
               >
                 {loading ? 'Creating account...' : 'Create Account'}
               </Button>
+              <MedicalDisclaimer sx={{ mt: 2 }} />
             </Box>
 
             <Typography sx={{ mt: 2.5, textAlign: 'center' }} variant="body2">

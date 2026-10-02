@@ -1,4 +1,4 @@
-import { getJson, setJson } from './deviceStorage';
+import { getJson, removeValue, setJson } from './deviceStorage';
 
 const STORE_KEY = 'medalarm-guest-store-v1';
 
@@ -82,6 +82,7 @@ export async function generateAlarms(medicineId) {
     alarmTime: time,
     repeatDays: ALL_DAYS,
     active: true,
+    source: 'AUTO',
   }));
 
   store.alarms.push(...created);
@@ -91,7 +92,7 @@ export async function generateAlarms(medicineId) {
 
 export async function createAlarm(alarm) {
   const store = await load();
-  const created = { ...alarm, id: genId(store.alarms), active: true };
+  const created = { ...alarm, id: genId(store.alarms), active: true, source: 'MANUAL' };
   store.alarms.push(created);
   await save(store);
   return ok(created);
@@ -119,43 +120,101 @@ export async function getLogs() {
   return ok(store.logs);
 }
 
-export async function addLog(alarmId, status) {
+const ANSWER_STATUSES = ['TAKEN', 'SKIPPED'];
+
+// Mirrors MedicationLogService: entering TAKEN uses pills, leaving it returns them.
+function adjustPillCount(medicine, previousStatus, nextStatus) {
+  const wasTaken = previousStatus === 'TAKEN';
+  const isTaken = nextStatus === 'TAKEN';
+  if (wasTaken === isTaken || !medicine || medicine.pillsRemaining == null) return;
+  const perDose = medicine.pillsPerDose || 1;
+  medicine.pillsRemaining = Math.max(0, medicine.pillsRemaining + (isTaken ? -perDose : perDose));
+}
+
+export async function addLog(alarmId, status, scheduledFor = null) {
   const store = await load();
   const alarm = store.alarms.find((a) => a.id === alarmId);
   const medicine = alarm
     ? store.medicines.find((m) => m.id === alarm.medicineId)
     : null;
+  const now = new Date().toISOString();
+
+  // One answer (and one snooze) per dose, like the server's unique constraint.
+  const sameKind = ANSWER_STATUSES.includes(status) ? ANSWER_STATUSES : [status];
+  const existing = scheduledFor
+    ? store.logs.find((log) => log.alarmId === alarmId
+      && log.scheduledFor === scheduledFor
+      && sameKind.includes(log.status))
+    : null;
+
+  if (existing) {
+    if (existing.status !== status) {
+      adjustPillCount(medicine, existing.status, status);
+      existing.status = status;
+    }
+    existing.takenAt = now;
+    await save(store);
+    return ok(existing);
+  }
 
   const entry = {
     id: genId(store.logs),
     alarmId,
     medicineId: alarm?.medicineId ?? null,
     medicineName: medicine?.name ?? '',
-    takenAt: new Date().toISOString(),
+    takenAt: now,
+    scheduledFor,
     status,
   };
 
   store.logs.push(entry);
+  adjustPillCount(medicine, null, status);
+
   await save(store);
   return ok(entry);
 }
 
+export async function deleteLog(logId) {
+  const store = await load();
+  const log = store.logs.find((entry) => entry.id === logId);
+  if (!log) throw new Error('Log not found');
+  const alarm = store.alarms.find((a) => a.id === log.alarmId);
+  const medicine = alarm ? store.medicines.find((m) => m.id === alarm.medicineId) : null;
+  adjustPillCount(medicine, log.status, null);
+  store.logs = store.logs.filter((entry) => entry.id !== logId);
+  await save(store);
+  return ok({});
+}
+
 export async function exportCSV() {
   const store = await load();
-  const rows = ['Date,Time,Medicine,Dosage,Status'];
+  // Same columns as the server's /logs/export.
+  const rows = ['Date,Time,Scheduled,Medicine,Dosage,Status'];
+  const pad = (value) => String(value).padStart(2, '0');
+  const csv = (value) => (/[",\n]/.test(String(value ?? ''))
+    ? `"${String(value).replace(/"/g, '""')}"`
+    : String(value ?? ''));
 
   store.logs.forEach((log) => {
     const d = log.takenAt ? new Date(log.takenAt) : null;
-    const date = d ? d.toISOString().slice(0, 10) : '';
-    const time = d ? d.toTimeString().slice(0, 8) : '';
+    // Local date and time (toISOString would give the UTC date next to a local time).
+    const date = d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : '';
+    const time = d ? `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` : '';
+    const scheduled = log.scheduledFor ? String(log.scheduledFor).slice(0, 16).replace('T', ' ') : '';
     const medicine = store.medicines.find((m) => m.id === log.medicineId);
-    rows.push(`${date},${time},${medicine?.name ?? ''},${medicine?.dosage ?? ''},${log.status}`);
+    rows.push([date, time, scheduled, csv(medicine?.name ?? log.medicineName), csv(medicine?.dosage), log.status].join(','));
   });
 
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
   return Promise.resolve({ data: blob });
 }
 
+// The raw on-device store, read regardless of whether guest mode is active
+// (used to move a guest's data into an account after they sign in).
+export async function getGuestSnapshot() {
+  return load();
+}
+
 export function clearGuestStore() {
-  localStorage.removeItem(STORE_KEY);
+  return removeValue(STORE_KEY);
 }

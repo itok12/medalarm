@@ -6,6 +6,7 @@ import com.example.medapp.dto.RegisterRequest;
 import com.example.medapp.entity.User;
 import com.example.medapp.repository.UserRepository;
 import com.example.medapp.security.JwtUtil;
+import com.example.medapp.security.LoginAttemptService;
 import com.example.medapp.service.CurrentUserService;
 import com.example.medapp.service.RefreshTokenService;
 import jakarta.validation.Valid;
@@ -28,12 +29,16 @@ import java.util.Map;
 public class AuthController {
 
     private static final String REFRESH_COOKIE_NAME = "medalarm_refresh";
+    // Native apps send this header and receive the refresh token in the body.
+    static final String CLIENT_HEADER = "X-MedAlarm-Client";
+    private static final String NATIVE_CLIENT = "native";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final CurrentUserService currentUserService;
+    private final LoginAttemptService loginAttemptService;
     private final boolean refreshCookieSecure;
     private final String refreshCookieSameSite;
     private final long refreshTokenDays;
@@ -43,6 +48,7 @@ public class AuthController {
                           JwtUtil jwtUtil,
                           RefreshTokenService refreshTokenService,
                           CurrentUserService currentUserService,
+                          LoginAttemptService loginAttemptService,
                           @Value("${medalarm.auth.refresh-cookie.secure:false}") boolean refreshCookieSecure,
                           @Value("${medalarm.auth.refresh-cookie.same-site:Strict}") String refreshCookieSameSite,
                           @Value("${jwt.refresh-token-days:7}") long refreshTokenDays) {
@@ -51,13 +57,15 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
         this.currentUserService = currentUserService;
+        this.loginAttemptService = loginAttemptService;
         this.refreshCookieSecure = refreshCookieSecure;
         this.refreshCookieSameSite = refreshCookieSameSite;
         this.refreshTokenDays = refreshTokenDays;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req,
+                                      @RequestHeader(value = CLIENT_HEADER, required = false) String client) {
         if (userRepository.existsByUsername(req.getUsername())) {
             return ResponseEntity.badRequest().body("Username already taken");
         }
@@ -71,37 +79,50 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setTimezone(resolveTimezone(req.getTimezone()));
         user.setDefaultAlarmTime(LocalTime.of(8, 0));
+        user.recordHealthDataConsent(LocalDateTime.now());
 
         String refreshToken = refreshTokenService.rotateRefreshToken(user);
 
         User saved = userRepository.save(user);
 
         String token = jwtUtil.generateToken(saved.getUsername());
-        return authResponse(saved, token, refreshToken);
+        return authResponse(saved, token, refreshToken, client);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req,
+                                   @RequestHeader(value = CLIENT_HEADER, required = false) String client) {
         String identifier = req.getUsername() == null ? "" : req.getUsername().trim();
+
+        Duration locked = loginAttemptService.lockRemaining(identifier);
+        if (!locked.isZero()) {
+            long minutes = Math.max(1, locked.toMinutes() + (locked.toSecondsPart() > 0 ? 1 : 0));
+            return ResponseEntity.status(429)
+                    .body("Too many failed sign-in attempts. Try again in " + minutes + " minutes.");
+        }
+
         User user = userRepository.findByUsername(identifier)
                 .or(() -> userRepository.findByEmail(identifier))
                 .orElse(null);
 
         if (user == null || user.getPassword() == null
                 || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            loginAttemptService.recordFailure(identifier);
             return ResponseEntity.status(401).body("Invalid username or password");
         }
+        loginAttemptService.recordSuccess(identifier);
 
         String refreshToken = refreshTokenService.rotateRefreshToken(user);
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
-        return authResponse(user, token, refreshToken);
+        return authResponse(user, token, refreshToken, client);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
             @RequestBody(required = false) Map<String, String> body,
+            @RequestHeader(value = CLIENT_HEADER, required = false) String client,
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshCookie
     ) {
         String refreshToken = body != null ? body.get("refreshToken") : null;
@@ -121,14 +142,16 @@ public class AuthController {
         String newRefreshToken = refreshTokenService.rotateRefreshToken(user);
         userRepository.save(user);
         String newToken = jwtUtil.generateToken(user.getUsername());
-        return authResponse(user, newToken, newRefreshToken);
+        return authResponse(user, newToken, newRefreshToken, client);
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
+            @RequestBody(required = false) Map<String, String> body,
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshCookie
     ) {
-        User user = resolveLogoutUser(refreshCookie);
+        String bodyToken = body != null ? body.get("refreshToken") : null;
+        User user = resolveLogoutUser(bodyToken != null && !bodyToken.isBlank() ? bodyToken : refreshCookie);
         if (user != null) {
             refreshTokenService.clear(user);
             userRepository.save(user);
@@ -138,10 +161,17 @@ public class AuthController {
                 .body(Map.of("message", "Logged out"));
     }
 
-    private ResponseEntity<AuthResponse> authResponse(User user, String accessToken, String refreshToken) {
+    private ResponseEntity<AuthResponse> authResponse(User user, String accessToken, String refreshToken, String client) {
+        AuthResponse body = buildAuthResponse(user, accessToken);
+        if (user.getHealthDataConsentAt() != null) {
+            body.setHealthDataConsentAt(user.getHealthDataConsentAt().toString());
+        }
+        if (NATIVE_CLIENT.equalsIgnoreCase(client)) {
+            body.setRefreshToken(refreshToken);
+        }
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken).toString())
-                .body(buildAuthResponse(user, accessToken));
+                .body(body);
     }
 
     private AuthResponse buildAuthResponse(User user, String accessToken) {

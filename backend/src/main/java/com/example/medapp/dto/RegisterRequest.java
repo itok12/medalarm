@@ -1,5 +1,6 @@
 package com.example.medapp.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -18,6 +19,13 @@ public class RegisterRequest {
     private String password;
 
     private String timezone;
+
+    // Explicit consent to store health data is required to create an account.
+    @AssertTrue(message = "Please agree to how MedAlarm stores your medicines and dose history")
+    private boolean healthDataConsent;
+
+    public boolean isHealthDataConsent() { return healthDataConsent; }
+    public void setHealthDataConsent(boolean healthDataConsent) { this.healthDataConsent = healthDataConsent; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

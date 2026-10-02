@@ -37,6 +37,7 @@ describe('authSession', () => {
       timezone: 'Europe/London',
       emailRemindersEnabled: true,
       defaultAlarmTime: '07:30:00',
+      healthDataConsentAt: '2026-10-02T15:20:00',
     });
 
     expect(readStoredUser()).toEqual({
@@ -46,6 +47,7 @@ describe('authSession', () => {
       timezone: 'Europe/London',
       emailRemindersEnabled: true,
       defaultAlarmTime: '07:30',
+      healthDataConsentAt: '2026-10-02T15:20:00',
     });
     expect(localStorage.getItem('token')).toBeNull();
     expect(localStorage.getItem('refreshToken')).toBeNull();

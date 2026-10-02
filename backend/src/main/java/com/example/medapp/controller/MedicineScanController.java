@@ -25,7 +25,6 @@ public class MedicineScanController {
 
     private static final String ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
-    private static final String MODEL = "claude-3-5-haiku-20241022";
     private static final String PROMPT =
         "Look at this medication packaging, label, or pill image. " +
         "Extract the medication name, dosage (e.g. 500mg, 10mg/5ml), " +
@@ -37,6 +36,10 @@ public class MedicineScanController {
 
     @Value("${anthropic.api-key:}")
     private String anthropicApiKey;
+
+    // Haiku tier: a short label read doesn't need a larger model. Override with ANTHROPIC_MODEL.
+    @Value("${anthropic.model:claude-haiku-4-5}")
+    private String model;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -55,7 +58,7 @@ public class MedicineScanController {
             String mediaType = image.getContentType() != null ? image.getContentType() : "image/jpeg";
 
             Map<String, Object> requestBody = Map.of(
-                "model", MODEL,
+                "model", model,
                 "max_tokens", 256,
                 "messages", List.of(Map.of(
                     "role", "user",

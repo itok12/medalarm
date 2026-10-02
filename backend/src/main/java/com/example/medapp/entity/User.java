@@ -34,6 +34,11 @@ public class User {
 
     private LocalTime defaultAlarmTime = LocalTime.of(8, 0);
 
+    // When the user agreed to MedAlarm storing their health data, and to which wording.
+    private LocalDateTime healthDataConsentAt;
+
+    private String healthDataConsentVersion;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Medicine> medicines = new ArrayList<>();
@@ -111,5 +116,18 @@ public class User {
 
     public void setDefaultAlarmTime(LocalTime defaultAlarmTime) {
         this.defaultAlarmTime = defaultAlarmTime;
+    }
+
+    public LocalDateTime getHealthDataConsentAt() {
+        return healthDataConsentAt;
+    }
+
+    public String getHealthDataConsentVersion() {
+        return healthDataConsentVersion;
+    }
+
+    public void recordHealthDataConsent(LocalDateTime at) {
+        this.healthDataConsentAt = at;
+        this.healthDataConsentVersion = HealthDataConsent.CURRENT_VERSION;
     }
 }

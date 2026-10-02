@@ -6,6 +6,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { medicineAPI, alarmAPI } from '../../services/api';
 import api from '../../services/api';
 import { captureException, trackEvent } from '../../services/telemetry';
+import { useAuth } from '../../context/AuthContext';
 
 function getTodayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -23,9 +24,14 @@ const INITIAL_MEDICINE = {
   imageUrl: '',
   startDate: getTodayIsoDate(),
   endDate: '',
+  pillsRemaining: '',
+  pillsPerDose: '1',
 };
 
 const MedicineForm = ({ onMedicineAdded }) => {
+  const { user } = useAuth();
+  // Label scanning runs on the server, so it needs an account.
+  const canScan = !!user && !user.guest && !user.sessionExpired;
   const [medicine, setMedicine] = useState(INITIAL_MEDICINE);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -106,6 +112,8 @@ const MedicineForm = ({ onMedicineAdded }) => {
       const payload = {
         ...medicine,
         endDate: medicine.endDate || null,
+        pillsRemaining: medicine.pillsRemaining !== '' ? Number(medicine.pillsRemaining) : null,
+        pillsPerDose: medicine.pillsPerDose !== '' ? Number(medicine.pillsPerDose) : 1,
       };
       const response = await medicineAPI.create(payload);
 
@@ -143,16 +151,24 @@ const MedicineForm = ({ onMedicineAdded }) => {
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           Add New Medicine
         </Typography>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={scanning ? <CircularProgress size={14} /> : <CameraAltIcon />}
-          disabled={scanning}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {scanning ? 'Scanning…' : 'Scan label'}
-        </Button>
+        {canScan && (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={scanning ? <CircularProgress size={14} /> : <CameraAltIcon />}
+            disabled={scanning}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {scanning ? 'Scanning…' : 'Scan label'}
+          </Button>
+        )}
       </Stack>
+      {canScan && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Scanning sends the photo to our AI provider (Anthropic) to read the label. MedAlarm does not keep the
+          photo. Always check the details against the label before saving.
+        </Typography>
+      )}
 
       {serverError && <Alert severity="error" sx={{ mb: 1 }}>{serverError}</Alert>}
       {scanNote && (
@@ -221,6 +237,29 @@ const MedicineForm = ({ onMedicineAdded }) => {
         error={!!errors.endDate}
         helperText={errors.endDate || 'Optional: alarms stop after this date'}
       />
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <TextField
+          label="Current pill count"
+          name="pillsRemaining"
+          type="number"
+          inputProps={{ min: 0, step: 1 }}
+          fullWidth
+          margin="dense"
+          value={medicine.pillsRemaining}
+          onChange={handleChange}
+          helperText="Optional — enables refill warnings"
+        />
+        <TextField
+          label="Pills per dose"
+          name="pillsPerDose"
+          type="number"
+          inputProps={{ min: 1, step: 1 }}
+          fullWidth
+          margin="dense"
+          value={medicine.pillsPerDose}
+          onChange={handleChange}
+        />
+      </Box>
       <TextField
         label="Instructions"
         name="instructions"

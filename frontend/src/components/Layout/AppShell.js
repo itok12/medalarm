@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   AppBar,
   BottomNavigation,
   BottomNavigationAction,
@@ -29,17 +30,26 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar } from '@capacitor/status-bar';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeContext';
 import { useMedData } from '../../context/MedDataContext';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { authAPI } from '../../services/api';
+import { useSettings } from '../../context/SettingsContext';
+import { authAPI, logAPI } from '../../services/api';
 import { isNativeMobilePlatform } from '../../services/nativePlatform';
-import { syncNativeAlarmNotifications } from '../../services/reminderService';
+import {
+  DOSE_ACTIONS,
+  scheduleSnoozedReminder,
+  syncNativeAlarmNotifications,
+} from '../../services/reminderService';
 import PwaInstallPrompt from '../Common/PwaInstallPrompt';
 import AlarmNotifier from '../Alarm/AlarmNotifier';
 import OnboardingDialog from '../Onboarding/OnboardingDialog';
+import GuestImportDialog from '../Onboarding/GuestImportDialog';
+import HealthDataConsentDialog from '../Onboarding/HealthDataConsentDialog';
+import useLargeText from '../../hooks/useLargeText';
 import { captureException, trackEvent } from '../../services/telemetry';
 
 const PRIMARY_NAV_ITEMS = [
@@ -67,9 +77,13 @@ function AppShell() {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const { user, logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
-  const { medicines, alarms, offline, refreshing, refreshAll } = useMedData();
+  const { medicines, alarms, logs, offline, refreshing, refreshAll } = useMedData();
+  const { settings } = useSettings();
   const { shouldShowChecklist } = useOnboarding();
   const [menuAnchor, setMenuAnchor] = useState(null);
+  const [importDialogVisible, setImportDialogVisible] = useState(false);
+  const largeText = useLargeText();
+  const needsConsent = !!user && !user.guest && !user.sessionExpired && !user.healthDataConsentAt;
 
   const currentPrimaryPath = useMemo(
     () => getCurrentPrimaryPath(location.pathname),
@@ -96,10 +110,64 @@ function AppShell() {
   }, [refreshAll]);
 
   useEffect(() => {
-    syncNativeAlarmNotifications(alarms, medicines).catch((error) => {
+    syncNativeAlarmNotifications(alarms, medicines, logs).catch((error) => {
       captureException(error, { source: 'AppShell.syncNativeAlarmNotifications' });
     });
-  }, [alarms, medicines]);
+  }, [alarms, medicines, logs]);
+
+  // The notification listener is registered once; read the latest data through a ref.
+  const latestRef = useRef({ medicines, settings, refreshAll, navigate });
+  latestRef.current = { medicines, settings, refreshAll, navigate };
+
+  useEffect(() => {
+    if (!isNativeMobilePlatform()) {
+      return undefined;
+    }
+
+    const listenerPromise = LocalNotifications.addListener(
+      'localNotificationActionPerformed',
+      async ({ actionId, notification }) => {
+        const { medicines: latestMedicines, settings: latestSettings } = latestRef.current;
+        const alarmId = notification?.extra?.alarmId;
+        const scheduledFor = notification?.extra?.scheduledFor;
+
+        try {
+          if (alarmId && actionId === DOSE_ACTIONS.TAKEN) {
+            await logAPI.log(alarmId, 'TAKEN', scheduledFor);
+            trackEvent('notification_dose_taken');
+            await latestRef.current.refreshAll({ background: true });
+            return;
+          }
+
+          if (alarmId && actionId === DOSE_ACTIONS.SNOOZE) {
+            const medicine = latestMedicines.find(
+              (entry) => String(entry.id) === String(notification.extra.medicineId)
+            );
+            await logAPI.log(alarmId, 'SNOOZED', scheduledFor);
+            await scheduleSnoozedReminder({
+              alarmId,
+              scheduledFor,
+              medicineId: medicine?.id,
+              medicineName: medicine?.name,
+              dosage: medicine?.dosage,
+              minutes: latestSettings.snoozeDurationMinutes,
+            });
+            trackEvent('notification_dose_snoozed', { minutes: latestSettings.snoozeDurationMinutes });
+            await latestRef.current.refreshAll({ background: true });
+            return;
+          }
+
+          latestRef.current.navigate('/');
+        } catch (error) {
+          captureException(error, { source: 'AppShell.notificationAction', actionId });
+        }
+      }
+    );
+
+    return () => {
+      listenerPromise.then((listener) => listener.remove()).catch(() => {});
+    };
+  }, []);
 
   const handleLogout = async () => {
     if (!user?.guest) {
@@ -132,8 +200,11 @@ function AppShell() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Box
               sx={{
-                width: 38,
-                height: 38,
+                // rem, not px, so the badge grows with the user's text size.
+                width: '2.4rem',
+                height: '2.4rem',
+                fontSize: '1.1rem',
+                lineHeight: 1,
                 borderRadius: 3,
                 display: 'grid',
                 placeItems: 'center',
@@ -196,10 +267,19 @@ function AppShell() {
             />
           )}
 
-          <IconButton onClick={toggleMode} color="inherit">
+          <IconButton
+            onClick={toggleMode}
+            color="inherit"
+            aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
             {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
-          <IconButton color="inherit" onClick={(event) => setMenuAnchor(event.currentTarget)}>
+          <IconButton
+            color="inherit"
+            aria-label="More options"
+            aria-haspopup="menu"
+            onClick={(event) => setMenuAnchor(event.currentTarget)}
+          >
             <MoreHorizIcon />
           </IconButton>
 
@@ -267,6 +347,20 @@ function AppShell() {
         </Box>
       )}
 
+      {user?.sessionExpired && (
+        <Alert
+          severity="warning"
+          square
+          action={(
+            <Button color="inherit" size="small" onClick={() => navigate('/login')}>
+              Sign in
+            </Button>
+          )}
+        >
+          Your session expired. Reminders keep working; sign in to sync changes.
+        </Alert>
+      )}
+
       <Box sx={{ pb: { xs: 'calc(84px + env(safe-area-inset-bottom))', md: 4 } }}>
         <Outlet />
       </Box>
@@ -287,7 +381,9 @@ function AppShell() {
           <BottomNavigation
             value={currentPrimaryPath}
             onChange={(_, nextValue) => navigate(nextValue)}
-            showLabels
+            // With large system text five labels collide; show only the selected
+            // one (every tab keeps its label as its accessible name).
+            showLabels={!largeText}
           >
             {PRIMARY_NAV_ITEMS.map((item) => (
               <BottomNavigationAction
@@ -302,7 +398,15 @@ function AppShell() {
       )}
 
       <AlarmNotifier alarms={alarms} medicines={medicines} />
-      <OnboardingDialog />
+      {/* One dialog at a time: consent first, then moving guest data, then the setup tour. */}
+      {needsConsent ? (
+        <HealthDataConsentDialog />
+      ) : (
+        <>
+          <GuestImportDialog onVisibleChange={setImportDialogVisible} />
+          {!importDialogVisible && <OnboardingDialog />}
+        </>
+      )}
       <PwaInstallPrompt />
     </Box>
   );

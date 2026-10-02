@@ -44,6 +44,26 @@ export function createAlarmDate(baseDate, alarmTime) {
   return date;
 }
 
+// A dose's identity: its wall-clock time, e.g. "2026-10-01T08:00:00". Matches the
+// backend's LocalDateTime scheduledFor.
+export function doseDateTimeKey(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    + `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+}
+
+export function todaysDoseKey(alarmTime, now = new Date()) {
+  return doseDateTimeKey(createAlarmDate(now, alarmTime));
+}
+
+// The Taken/Skipped log that answers today's dose of this alarm, if any.
+export function findTodaysAnswer(logs = [], alarm, now = new Date()) {
+  const doseKey = todaysDoseKey(alarm.alarmTime, now);
+  return logs.find((log) => String(log.alarmId) === String(alarm.id)
+    && (log.status === 'TAKEN' || log.status === 'SKIPPED')
+    && String(log.scheduledFor || '').slice(0, 16) === doseKey.slice(0, 16)) || null;
+}
+
 export function getTodaysAlarms(alarms = [], now = new Date()) {
   const todayName = DAYS_OF_WEEK[now.getDay()];
   return alarms

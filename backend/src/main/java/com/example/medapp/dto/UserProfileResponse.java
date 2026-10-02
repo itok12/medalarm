@@ -9,6 +9,7 @@ public class UserProfileResponse {
     private String timezone;
     private boolean emailRemindersEnabled;
     private String defaultAlarmTime;
+    private String healthDataConsentAt;
 
     public UserProfileResponse(User user) {
         this.id = user.getId();
@@ -17,6 +18,7 @@ public class UserProfileResponse {
         this.timezone = user.getTimezone();
         this.emailRemindersEnabled = user.isEmailRemindersEnabled();
         this.defaultAlarmTime = user.getDefaultAlarmTime() != null ? user.getDefaultAlarmTime().toString() : null;
+        this.healthDataConsentAt = user.getHealthDataConsentAt() != null ? user.getHealthDataConsentAt().toString() : null;
     }
 
     public Long getId() {
@@ -41,5 +43,9 @@ public class UserProfileResponse {
 
     public String getDefaultAlarmTime() {
         return defaultAlarmTime;
+    }
+
+    public String getHealthDataConsentAt() {
+        return healthDataConsentAt;
     }
 }
