@@ -38,6 +38,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Lints tests too; the build step only lints app code.
+      - run: npx eslint src --max-warnings=0
       - run: npm test -- --watchAll=false
       # CI=true (set by GitHub) makes react-scripts treat lint warnings as errors.
       - run: npm run build

@@ -261,6 +261,11 @@ describe('reconcileNotifications', () => {
     expect(result.toSchedule).toHaveLength(21);
   });
 
+  it('never cancels a test reminder', () => {
+    const test = { id: 2000000000, extra: { test: true } };
+    expect(reconcileNotifications([], [test]).toCancel).toEqual([]);
+  });
+
   it('keeps a snooze until its dose is answered', () => {
     const snooze = { id: 5, extra: { alarmId: 1, doseDate: '2026-10-01', kind: NOTIFICATION_KIND.SNOOZE } };
 

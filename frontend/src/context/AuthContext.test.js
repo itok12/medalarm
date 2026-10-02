@@ -1,6 +1,7 @@
-import React from 'react';
+/* eslint-disable testing-library/no-unnecessary-act --
+   This test renders with react-dom directly (no Testing Library), so act() is required. */
+import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { act } from 'react-dom/test-utils';
 import { AuthProvider, useAuth } from './AuthContext';
 import { authAPI } from '../services/api';
 import { persistUser } from '../utils/authSession';

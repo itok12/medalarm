@@ -202,6 +202,11 @@ export function reconcileNotifications(desired = [], pending = [], answeredDoses
   pending.forEach((notification) => {
     const extra = notification.extra || {};
 
+    if (extra.test) {
+      // "Send a test reminder" from Settings; not part of the schedule.
+      return;
+    }
+
     if (extra.kind === NOTIFICATION_KIND.SNOOZE) {
       // Snoozes come from a user action, so keep them unless the dose was answered.
       if (answeredDoses.has(`${extra.alarmId}|${extra.doseDate}`)) {

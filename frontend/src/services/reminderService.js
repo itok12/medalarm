@@ -160,6 +160,28 @@ export function syncNativeAlarmNotifications(alarms = [], medicines = [], logs =
   return run;
 }
 
+// Above the planner's id range (max ~4e8), so it can never replace a dose reminder.
+const TEST_NOTIFICATION_ID = 2_000_000_000;
+
+/** Fires a reminder in a few seconds so the user can check it actually arrives. */
+export async function sendTestReminder(seconds = 10) {
+  if (!isNativeMobilePlatform()) return false;
+  if ((await getReminderPermissionStatus()) !== 'granted') return false;
+
+  await ensureAndroidChannel();
+  await LocalNotifications.schedule({
+    notifications: [{
+      id: TEST_NOTIFICATION_ID,
+      title: 'MedAlarm test reminder',
+      body: 'Reminders are working on this device.',
+      schedule: { at: new Date(Date.now() + seconds * 1000), allowWhileIdle: true },
+      channelId: CHANNEL_ID,
+      extra: { test: true },
+    }],
+  });
+  return true;
+}
+
 export async function scheduleSnoozedReminder({ alarmId, scheduledFor, medicineId, medicineName, dosage, minutes }) {
   if (!isNativeMobilePlatform()) {
     return;
