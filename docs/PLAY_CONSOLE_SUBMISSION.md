@@ -6,8 +6,14 @@ This checklist turns the signed Android release into a Play Console-ready submis
 
 - Signed AAB: `frontend/android/app/build/outputs/bundle/release/app-release.aab`
 - Signed APK: `frontend/android/app/build/outputs/apk/release/app-release.apk`
-- Version code: `1`
-- Version name: `1.0.0`
+- Version code: `2` (earlier builds used `1`; Play rejects a code it has already seen)
+- Version name: `1.1.0`
+- Build: `MEDALARM_ANDROID_VERSION_CODE=2 MEDALARM_ANDROID_VERSION_NAME=1.1.0 ./gradlew bundleRelease`
+  after `npm run mobile:sync` (which refuses to build without an https API URL)
+- Permissions to expect in the Console review: `POST_NOTIFICATIONS`,
+  `SCHEDULE_EXACT_ALARM` (user-granted "Alarms & reminders"; reminders are the
+  app's core function, see `docs/DEVICE_QA.md` for why exact timing matters),
+  `RECEIVE_BOOT_COMPLETED` (reschedules reminders after a restart)
 
 ## Package Contents To Prepare
 
