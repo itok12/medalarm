@@ -19,6 +19,8 @@ function EditMedicineForm({ medicine, onSaved }) {
     imageUrl: medicine.imageUrl || '',
     startDate: normalizeDate(medicine.startDate),
     endDate: normalizeDate(medicine.endDate),
+    pillsRemaining: medicine.pillsRemaining != null ? String(medicine.pillsRemaining) : '',
+    pillsPerDose: medicine.pillsPerDose != null ? String(medicine.pillsPerDose) : '1',
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -56,6 +58,8 @@ function EditMedicineForm({ medicine, onSaved }) {
       await medicineAPI.update(medicine.id, {
         ...form,
         endDate: form.endDate || null,
+        pillsRemaining: form.pillsRemaining !== '' ? Number(form.pillsRemaining) : null,
+        pillsPerDose: form.pillsPerDose !== '' ? Number(form.pillsPerDose) : 1,
       });
       onSaved?.();
     } catch (error) {
@@ -139,14 +143,29 @@ function EditMedicineForm({ medicine, onSaved }) {
         value={form.instructions}
         onChange={handleChange}
       />
-      <TextField
-        fullWidth
-        label="Image URL"
-        name="imageUrl"
-        margin="normal"
-        value={form.imageUrl}
-        onChange={handleChange}
-      />
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <TextField
+          fullWidth
+          label="Current pill count"
+          name="pillsRemaining"
+          type="number"
+          inputProps={{ min: 0, step: 1 }}
+          margin="normal"
+          value={form.pillsRemaining}
+          onChange={handleChange}
+          helperText="Leave blank to disable"
+        />
+        <TextField
+          fullWidth
+          label="Pills per dose"
+          name="pillsPerDose"
+          type="number"
+          inputProps={{ min: 1, step: 1 }}
+          margin="normal"
+          value={form.pillsPerDose}
+          onChange={handleChange}
+        />
+      </Box>
 
       <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }} disabled={loading}>
         {loading ? 'Saving...' : 'Save Changes'}

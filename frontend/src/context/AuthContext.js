@@ -7,8 +7,10 @@ import {
   normalizeTime,
   persistGuest,
   persistUser,
+  readStoredUser,
 } from '../utils/authSession';
 import { authAPI, setAccessToken } from '../services/api';
+import { clearNativeRefreshToken } from '../services/nativeSession';
 import { setTelemetryUser } from '../services/telemetry';
 
 const AuthContext = createContext(null);
@@ -27,20 +29,42 @@ export function AuthProvider({ children }) {
     let ignore = false;
 
     async function restoreSession() {
-      // Snapshot guest flag BEFORE we touch anything
       const alreadyGuest = isStoredGuest();
+      const storedUser = alreadyGuest ? null : readStoredUser();
 
-      // Show the app immediately — no spinner, no login wall
-      if (!ignore) {
-        persistGuest();
-        setUser(GUEST_USER);
+      if (storedUser) {
+        // Returning signed-in user: show their cached data (and keep their
+        // reminders) straight away, then refresh the session in the background.
+        // A failed refresh must never downgrade them to an empty guest account.
+        setUser(storedUser);
         setAuthLoading(false);
+
+        try {
+          const response = await authAPI.refresh();
+          if (ignore) return;
+          const nextUser = normalizeSession(response.data);
+          setAccessToken(nextUser.token);
+          persistUser(nextUser);
+          setUser(nextUser);
+        } catch (error) {
+          if (ignore) return;
+          const status = error.response?.status;
+          if (status === 401 || status === 403) {
+            setUser((prev) => (prev ? { ...prev, sessionExpired: true } : prev));
+          }
+          // Network errors: stay signed in on cached data; later API calls retry.
+        }
+        return;
       }
 
-      // Returning guest with no account — skip the API call entirely
+      // No account on this device: open straight into guest mode.
+      persistGuest();
+      setUser(GUEST_USER);
+      setAuthLoading(false);
+
       if (alreadyGuest) return;
 
-      // First visit or returning signed-in user: try to restore a real session silently
+      // First visit: a refresh cookie (web) may still hold a real session.
       try {
         const response = await authAPI.refresh();
         if (ignore) return;
@@ -50,7 +74,7 @@ export function AuthProvider({ children }) {
         clearStoredGuest();
         setUser(nextUser);
       } catch {
-        // No valid session — guest mode is already active, nothing to do
+        // No valid session; guest mode is already active.
       }
     }
 
@@ -89,9 +113,11 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setAccessToken(null);
+    clearNativeRefreshToken().catch(() => {});
     clearStoredUser();
-    clearStoredGuest();
-    setUser(null);
+    // Fall back to on-device guest mode rather than a user-less shell.
+    persistGuest();
+    setUser(GUEST_USER);
   };
 
   return (

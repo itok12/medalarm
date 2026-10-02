@@ -20,6 +20,7 @@ Use this worksheet to answer the Google Play `Data safety` form consistently wit
 
 - Crash logs: `Collected` only if Sentry is enabled via deployment environment variables
   - Purpose: diagnostics
+  - Linked only to an opaque numeric user id; no name, username or email is sent to Sentry
   - Required: no
 
 ### Health and fitness

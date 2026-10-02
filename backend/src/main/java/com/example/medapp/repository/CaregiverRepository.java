@@ -1,6 +1,7 @@
 package com.example.medapp.repository;
 
 import com.example.medapp.entity.CaregiverRelation;
+import com.example.medapp.entity.CaregiverStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,7 +12,11 @@ public interface CaregiverRepository extends JpaRepository<CaregiverRelation, Lo
     List<CaregiverRelation> findByCaregiver_IdOrderByPatient_UsernameAsc(Long caregiverId);
     List<CaregiverRelation> findByCaregiver_IdOrPatient_Id(Long caregiverId, Long patientId);
 
+    List<CaregiverRelation> findByPatient_IdOrderByCaregiver_UsernameAsc(Long patientId);
+
     boolean existsByCaregiverIdAndPatientId(Long caregiverId, Long patientId);
+
+    boolean existsByCaregiver_IdAndPatient_IdAndStatus(Long caregiverId, Long patientId, CaregiverStatus status);
 
     Optional<CaregiverRelation> findByCaregiver_IdAndPatient_Id(Long caregiverId, Long patientId);
 }

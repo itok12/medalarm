@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Typography, Switch, FormControlLabel, Divider,
-  Select, MenuItem, FormControl, InputLabel, Button, Snackbar, Alert,
+  Button, Snackbar, Alert,
   Slider, TextField, Fade, List, ListItem, ListItemIcon, ListItemText,
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -10,28 +10,14 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import EmailIcon from '@mui/icons-material/Email';
 import RestoreIcon from '@mui/icons-material/Restore';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PublicIcon from '@mui/icons-material/Public';
 import AppScreen from '../components/Layout/AppScreen';
+import ReminderHealthCard from '../components/Common/ReminderHealthCard';
 import { useSettings } from '../context/SettingsContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
-
-const ALARM_TONES = [
-  { value: 'default', label: 'Default Beep' },
-  { value: 'gentle', label: 'Gentle Chime' },
-  { value: 'urgent', label: 'Urgent Alert' },
-  { value: 'melody', label: 'Soft Melody' },
-  { value: 'digital', label: 'Digital Buzz' },
-];
-
-const DATE_FORMATS = [
-  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (US)' },
-  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (EU)' },
-  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (ISO)' },
-];
 
 function SettingSection({ icon, title, children }) {
   return (
@@ -100,28 +86,9 @@ function SettingsPage() {
     >
       <Fade in timeout={400}>
         <Box>
+          <ReminderHealthCard />
           <SettingSection icon={<NotificationsIcon />} title="Notifications">
             <List disablePadding>
-              <ListItem disableGutters>
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <NotificationsIcon fontSize="small" color="action" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Notification Sound"
-                  secondary="Play a sound when an alarm fires on this device"
-                />
-                <FormControlLabel
-                  control={(
-                    <Switch
-                      checked={settings.notificationSound}
-                      onChange={(event) => updateSetting('notificationSound', event.target.checked)}
-                      color="primary"
-                    />
-                  )}
-                  label=""
-                />
-              </ListItem>
-              <Divider component="li" />
               <ListItem disableGutters>
                 <ListItemIcon sx={{ minWidth: 36 }}>
                   <EmailIcon fontSize="small" color="action" />
@@ -134,6 +101,7 @@ function SettingsPage() {
                   control={(
                     <Switch
                       checked={!!user?.emailRemindersEnabled}
+                      inputProps={{ 'aria-label': 'Email reminders' }}
                       onChange={(event) =>
                         saveServerSettings(
                           { emailRemindersEnabled: event.target.checked },
@@ -177,21 +145,6 @@ function SettingsPage() {
 
           <SettingSection icon={<MusicNoteIcon />} title="Alarm Preferences">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Alarm Tone</InputLabel>
-                <Select
-                  value={settings.alarmTone}
-                  label="Alarm Tone"
-                  onChange={(event) => updateSetting('alarmTone', event.target.value)}
-                >
-                  {ALARM_TONES.map((tone) => (
-                    <MenuItem key={tone.value} value={tone.value}>
-                      {tone.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
               <TextField
                 label="Default Alarm Time"
                 type="time"
@@ -219,25 +172,12 @@ function SettingsPage() {
                   secondary={`Currently using ${mode} theme`}
                 />
                 <FormControlLabel
-                  control={<Switch checked={mode === 'dark'} onChange={toggleMode} color="primary" />}
-                  label=""
-                />
-              </ListItem>
-              <Divider component="li" />
-              <ListItem disableGutters>
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <ViewCompactIcon fontSize="small" color="action" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Compact View"
-                  secondary="Show more items with reduced spacing"
-                />
-                <FormControlLabel
                   control={(
                     <Switch
-                      checked={settings.compactView}
-                      onChange={(event) => updateSetting('compactView', event.target.checked)}
+                      checked={mode === 'dark'}
+                      onChange={toggleMode}
                       color="primary"
+                      inputProps={{ 'aria-label': 'Dark mode' }}
                     />
                   )}
                   label=""
@@ -248,21 +188,6 @@ function SettingsPage() {
 
           <SettingSection icon={<CalendarTodayIcon />} title="Regional">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Date Format</InputLabel>
-                <Select
-                  value={settings.dateFormat}
-                  label="Date Format"
-                  onChange={(event) => updateSetting('dateFormat', event.target.value)}
-                >
-                  {DATE_FORMATS.map((format) => (
-                    <MenuItem key={format.value} value={format.value}>
-                      {format.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
               <TextField
                 label="Timezone"
                 size="small"
@@ -282,14 +207,6 @@ function SettingsPage() {
           </SettingSection>
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => showMsg('Local settings save automatically and server settings save as you change them')}
-              sx={{ minWidth: 140 }}
-            >
-              Save Settings
-            </Button>
             <Button
               variant="outlined"
               size="large"

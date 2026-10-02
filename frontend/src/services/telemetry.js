@@ -107,15 +107,8 @@ export function setTelemetryUser(user) {
   pendingUserId = user?.userId ? String(user.userId) : null;
 
   if (SENTRY_DSN) {
-    Sentry.setUser(
-      user
-        ? {
-            id: String(user.userId),
-            email: user.email || undefined,
-            username: user.username || undefined,
-          }
-        : null
-    );
+    // Opaque id only: error reports from a health app must not carry names or emails.
+    Sentry.setUser(user ? { id: String(user.userId) } : null);
   }
 
   if (

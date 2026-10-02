@@ -2,6 +2,7 @@ package com.example.medapp.controller;
 
 import com.example.medapp.dto.CreateLogRequest;
 import com.example.medapp.entity.MedicationLog;
+import com.example.medapp.service.CurrentUserService;
 import com.example.medapp.service.MedicationLogService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -10,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -18,15 +22,23 @@ import java.util.List;
 public class MedicationLogController {
 
     private final MedicationLogService medicationLogService;
+    private final CurrentUserService currentUserService;
 
-    public MedicationLogController(MedicationLogService medicationLogService) {
+    public MedicationLogController(MedicationLogService medicationLogService, CurrentUserService currentUserService) {
         this.medicationLogService = medicationLogService;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping
     public ResponseEntity<MedicationLog> logMedication(@Valid @RequestBody CreateLogRequest req) {
-        MedicationLog log = medicationLogService.logMedication(req.getAlarmId(), req.getStatus());
+        MedicationLog log = medicationLogService.logMedication(req.getAlarmId(), req.getStatus(), req.getScheduledFor());
         return ResponseEntity.ok(log);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteLog(@PathVariable Long id) {
+        medicationLogService.deleteLog(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
@@ -37,16 +49,23 @@ public class MedicationLogController {
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportCSV() {
         List<MedicationLog> logs = medicationLogService.getLogsForCurrentUser();
+        ZoneId zone = userZone();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Date,Time,Medicine,Dosage,Status\n");
+        sb.append("Date,Time,Scheduled,Medicine,Dosage,Status\n");
 
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm:ss");
+        DateTimeFormatter scheduledFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
         for (MedicationLog log : logs) {
-            String date = log.getTakenAt() != null ? log.getTakenAt().format(dateFmt) : "";
-            String time = log.getTakenAt() != null ? log.getTakenAt().format(timeFmt) : "";
+            // takenAt is stored in UTC; show it in the user's own timezone.
+            ZonedDateTime loggedAt = log.getTakenAt() != null
+                    ? log.getTakenAt().atOffset(ZoneOffset.UTC).atZoneSameInstant(zone)
+                    : null;
+            String date = loggedAt != null ? loggedAt.format(dateFmt) : "";
+            String time = loggedAt != null ? loggedAt.format(timeFmt) : "";
+            String scheduled = log.getScheduledFor() != null ? log.getScheduledFor().format(scheduledFmt) : "";
             String medicine = "";
             String dosage = "";
             if (log.getAlarm() != null && log.getAlarm().getMedicine() != null) {
@@ -56,6 +75,7 @@ public class MedicationLogController {
             String status = log.getStatus() != null ? log.getStatus() : "";
             sb.append(date).append(",")
               .append(time).append(",")
+              .append(scheduled).append(",")
               .append(medicine).append(",")
               .append(dosage).append(",")
               .append(status).append("\n");
@@ -68,6 +88,15 @@ public class MedicationLogController {
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(bytes);
     }
+
+    private ZoneId userZone() {
+        try {
+            return ZoneId.of(currentUserService.getCurrentUser().getTimezone());
+        } catch (Exception ex) {
+            return ZoneOffset.UTC;
+        }
+    }
+
     private String escapeCSV(String value) {
         if (value == null) return "";
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
@@ -76,4 +105,3 @@ public class MedicationLogController {
         return value;
     }
 }
-

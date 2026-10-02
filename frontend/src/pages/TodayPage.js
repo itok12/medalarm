@@ -29,13 +29,23 @@ import { useMedData } from '../context/MedDataContext';
 import { useSettings } from '../context/SettingsContext';
 import { logAPI } from '../services/api';
 import {
+  getExactAlarmStatus,
   getReminderPermissionStatus,
+  openExactAlarmSettings,
   requestReminderPermission,
   scheduleSnoozedReminder,
   syncNativeAlarmNotifications,
 } from '../services/reminderService';
 import { captureException, trackEvent } from '../services/telemetry';
-import { computeAdherenceStreak, findNextAlarm, formatTime12h, getTodaysAlarms, takenInLast7Days } from '../utils/alarmTimeline';
+import {
+  computeAdherenceStreak,
+  findNextAlarm,
+  findTodaysAnswer,
+  formatTime12h,
+  getTodaysAlarms,
+  takenInLast7Days,
+  todaysDoseKey,
+} from '../utils/alarmTimeline';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -82,7 +92,8 @@ function TodayPage() {
   const { settings } = useSettings();
   const { medicines, alarms, logs, loading, error, offline, refreshAll, lastSyncedAt } = useMedData();
   const [permissionStatus, setPermissionStatus] = useState('prompt');
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [exactStatus, setExactStatus] = useState('granted');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success', undoLogId: null });
 
   const medNameById = useMemo(() => {
     const map = new Map();
@@ -101,32 +112,71 @@ function TodayPage() {
   const takenThisWeek = useMemo(() => takenInLast7Days(logs), [logs]);
   const streak = useMemo(() => computeAdherenceStreak(logs), [logs]);
 
+  const lowStockMedicines = useMemo(() => medicines.filter((med) => {
+    if (med.pillsRemaining == null) return false;
+    const dosesPerDay = {
+      'Once daily': 1, 'Twice daily': 2, 'Three times daily': 3, 'Four times daily': 4,
+    }[med.frequency] || 1;
+    const perDose = med.pillsPerDose || 1;
+    return med.pillsRemaining <= perDose * dosesPerDay * 7;
+  }), [medicines]);
+
   useEffect(() => {
-    getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
+    const checkPermissions = () => {
+      getReminderPermissionStatus().then(setPermissionStatus).catch(() => setPermissionStatus('prompt'));
+      getExactAlarmStatus().then(setExactStatus).catch(() => setExactStatus('granted'));
+    };
+
+    // Re-check when the user comes back from the system settings screen.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') checkPermissions();
+    };
+
+    checkPermissions();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
-  const showMessage = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
+  const showMessage = (message, severity = 'success', undoLogId = null) => {
+    setSnackbar({ open: true, message, severity, undoLogId });
   };
 
-  const handleLog = async (alarmId, status) => {
+  const handleLog = async (alarm, status) => {
     try {
-      await logAPI.log(alarmId, status);
+      const response = await logAPI.log(alarm.id, status, todaysDoseKey(alarm.alarmTime));
+      // Refreshing the logs re-runs the reminder sync, which drops this dose's nudges.
       await refreshAll({ background: true });
       trackEvent('dose_logged', { status });
-      showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.');
+      showMessage(status === 'TAKEN' ? 'Dose marked as taken.' : 'Dose marked as skipped.', 'success', response.data?.id);
     } catch (actionError) {
       captureException(actionError, { source: 'TodayPage.handleLog', status });
       showMessage('Could not update this dose.', 'error');
     }
   };
 
+  const handleUndo = async (logId) => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+    try {
+      await logAPI.remove(logId);
+      // Refreshing the logs re-runs the reminder sync, so the dose's reminders come back.
+      await refreshAll({ background: true });
+      trackEvent('dose_log_undone');
+      showMessage('Undone. The dose is open again.');
+    } catch (undoError) {
+      captureException(undoError, { source: 'TodayPage.handleUndo' });
+      showMessage('Could not undo this dose.', 'error');
+    }
+  };
+
   const handleSnooze = async (alarm) => {
     const medicine = medicineById.get(alarm.medicineId);
     try {
-      await logAPI.log(alarm.id, 'SNOOZED');
+      const scheduledFor = todaysDoseKey(alarm.alarmTime);
+      await logAPI.log(alarm.id, 'SNOOZED', scheduledFor);
       await scheduleSnoozedReminder({
         alarmId: alarm.id,
+        scheduledFor,
+        medicineId: alarm.medicineId,
         medicineName: medicine?.name,
         dosage: medicine?.dosage,
         minutes: settings.snoozeDurationMinutes,
@@ -144,10 +194,20 @@ function TodayPage() {
     const status = await requestReminderPermission();
     setPermissionStatus(status);
     if (status === 'granted') {
-      await syncNativeAlarmNotifications(alarms, medicines);
+      await syncNativeAlarmNotifications(alarms, medicines, logs);
       showMessage('Reminders are enabled.');
     }
     trackEvent('reminder_permission_requested', { status });
+  };
+
+  const allowExactReminders = async () => {
+    try {
+      const status = await openExactAlarmSettings();
+      setExactStatus(status);
+      trackEvent('exact_alarm_permission_requested', { status });
+    } catch (settingsError) {
+      captureException(settingsError, { source: 'TodayPage.allowExactReminders' });
+    }
   };
 
   return (
@@ -156,11 +216,24 @@ function TodayPage() {
       subtitle="Your next doses, quick actions, and reminder status all live here."
     >
       <Stack spacing={3}>
-        {error && <Alert severity="error">{error}</Alert>}
+        {/* An expired session already has its own banner; don't blame the connection. */}
+        {error && !user?.sessionExpired && <Alert severity="error">{error}</Alert>}
+
+        {lowStockMedicines.length > 0 && (
+          <Alert severity="warning" sx={{ borderRadius: 3 }}>
+            <strong>Refill soon:</strong>{' '}
+            {lowStockMedicines.map((m) => `${m.name} (${m.pillsRemaining} pills left)`).join(', ')}
+          </Alert>
+        )}
 
         <OnboardingChecklistCard />
 
-        <ReminderPermissionCard status={permissionStatus} onEnable={enableReminders} />
+        <ReminderPermissionCard
+          status={permissionStatus}
+          exactStatus={exactStatus}
+          onEnable={enableReminders}
+          onAllowExact={allowExactReminders}
+        />
 
         <Card
           sx={{
@@ -273,6 +346,7 @@ function TodayPage() {
               <Grid container spacing={2}>
                 {todaysAlarms.map((alarm) => {
                   const medicine = medicineById.get(alarm.medicineId);
+                  const answer = findTodaysAnswer(logs, alarm);
                   return (
                     <Grid item xs={12} key={alarm.id}>
                       <Card variant="outlined" sx={{ borderRadius: 4 }}>
@@ -299,11 +373,31 @@ function TodayPage() {
                               {medicine?.dosage || 'Dose not set'} - {medicine?.frequency || 'Schedule not set'}
                             </Typography>
                           </Box>
+                          {answer ? (
+                            // Answered: say so plainly, so nobody wonders whether they already took it.
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                              <Chip
+                                icon={answer.status === 'TAKEN' ? <CheckCircleOutlineIcon /> : undefined}
+                                color={answer.status === 'TAKEN' ? 'success' : 'default'}
+                                label={answer.status === 'TAKEN'
+                                  ? `Taken at ${new Date(answer.takenAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                                  : 'Skipped'}
+                              />
+                              <Button
+                                variant="text"
+                                color="inherit"
+                                onClick={() => handleUndo(answer.id)}
+                                aria-label={`Undo ${answer.status === 'TAKEN' ? 'taken' : 'skipped'} for ${medicine?.name || 'this medicine'} at ${formatTime12h(alarm.alarmTime)}`}
+                              >
+                                Undo
+                              </Button>
+                            </Stack>
+                          ) : (
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Button
                               variant="contained"
                               color="success"
-                              onClick={() => handleLog(alarm.id, 'TAKEN')}
+                              onClick={() => handleLog(alarm, 'TAKEN')}
                             >
                               Taken
                             </Button>
@@ -318,11 +412,12 @@ function TodayPage() {
                             <Button
                               variant="text"
                               color="inherit"
-                              onClick={() => handleLog(alarm.id, 'SKIPPED')}
+                              onClick={() => handleLog(alarm, 'SKIPPED')}
                             >
                               Skip
                             </Button>
                           </Stack>
+                          )}
                         </CardContent>
                       </Card>
                     </Grid>
@@ -340,7 +435,15 @@ function TodayPage() {
         autoHideDuration={3500}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          action={snackbar.undoLogId ? (
+            <Button color="inherit" size="small" onClick={() => handleUndo(snackbar.undoLogId)}>
+              Undo
+            </Button>
+          ) : undefined}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
