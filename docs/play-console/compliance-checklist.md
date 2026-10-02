@@ -6,27 +6,27 @@ legal details.
 
 ## Before the privacy policy goes live
 
-- [ ] Fill every `[TO FILL]` in `docs/PRIVACY_POLICY.md`:
-  - your full legal name as data controller
-  - the transfer safeguard each US provider offers (check Render's and
-    Anthropic's Data Processing Addendums: UK Extension to the EU-US Data
-    Privacy Framework, or the UK International Data Transfer Addendum)
-  - backup retention once you choose a database plan
-  - the email provider, only if you switch on email reminders
+- [ ] Put your full legal name in the one remaining `[TO FILL]` in
+  `docs/PRIVACY_POLICY.md` (data controller). Transfers and backup retention
+  are filled in (2026-10-03, from Render's DPA of 19 Dec 2024 and Anthropic's
+  DPA). Name the email provider only if you switch on email reminders.
 - [ ] Regenerate the public page: `python scripts/privacy-policy-html.py`
   (or ask Claude), deploy, and check https://medalarmapp.com/privacy-policy.html
-- [ ] Accept/sign Render's and Anthropic's Data Processing Addendums (both
-  process personal data for you)
+- [x] Data Processing Addendums: nothing to sign. Render's DPA "supplements
+  the Render Terms of Service" and both parties are deemed to have signed its
+  SCCs and UK Addendum; Anthropic's DPA is incorporated into its Commercial
+  Terms. Keep a dated PDF of each for your records.
+- [ ] Backups: the policy promises deletion from backups within 7 days. Render
+  free Postgres has no backups; paid plans keep point-in-time recovery for
+  3-7 days. If you choose a plan with longer retention, update the policy.
 
 ## UK data protection
 
 - [ ] Pay the ICO data protection fee (most controllers processing personal
   data must; small organisations pay the lowest tier). Check with the ICO's
   self-assessment: https://ico.org.uk/for-organisations/data-protection-fee/
-- [ ] Write a short Data Protection Impact Assessment (DPIA). Processing health
-  data is a special category, so a DPIA is expected when it is likely to be high
-  risk. The ICO has a template. The useful content is already in
-  `docs/PRIVACY_POLICY.md` and the security sections of the Week 3 commits.
+- [ ] Review and sign off the draft DPIA in `docs/DPIA.md` (add your name and
+  date; revisit it when data handling changes).
 - [ ] Decide what happens to data if you stop running the service, and say so
   in the policy.
 

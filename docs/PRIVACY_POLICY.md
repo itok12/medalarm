@@ -60,7 +60,6 @@ We use these service providers. They act only on our instructions.
 |----------|--------------|----------|
 | Render Services, Inc. | Hosts the MedAlarm servers and database | United States |
 | Anthropic, PBC | Reads medicine labels from photos you choose to scan | United States |
-| [TO FILL: email provider, only if email reminders are switched on] | Sends reminder emails you opted into | [TO FILL] |
 
 Caregivers you approve can read your dose history (medicine names, times,
 taken or skipped). They cannot change your medicines or reminders.
@@ -70,15 +69,19 @@ We do not share your data with anyone else unless the law requires it.
 ## International transfers
 
 Our hosting provider and label-scan provider are in the United States. These
-transfers are protected by [TO FILL: the safeguard each provider offers, e.g.
-the UK Extension to the EU-US Data Privacy Framework, or the UK International
-Data Transfer Addendum to standard contractual clauses].
+transfers are protected by each provider's Data Processing Addendum:
+
+- **Render** transfers data under the UK Extension to the EU-US Data Privacy
+  Framework, or, where that does not apply, the UK International Data Transfer
+  Addendum to the EU standard contractual clauses.
+- **Anthropic** transfers data under the UK International Data Transfer
+  Addendum to the EU standard contractual clauses.
 
 ## How long we keep data
 
 - **Account and health data:** while your account exists. When you delete
   your account, it is removed from our live database straight away and from
-  any backups within [TO FILL: backup retention, e.g. 30] days.
+  any database backups within 7 days, when those backups expire.
 - **Scanned label photos:** not stored by MedAlarm. Anthropic processes them
   under its own API terms.
 - **Sign-in protection data:** up to 15 minutes, in memory only.
